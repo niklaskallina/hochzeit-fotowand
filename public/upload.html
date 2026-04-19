@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Foto hochladen</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f6f1e8;
+        --bg-2: #efe6d4;
+        --ink: #2a2623;
+        --ink-soft: #6b625b;
+        --accent: #8a6a3b;
+        --accent-deep: #5e4826;
+        --line: #d9cfbd;
+        --ok: #4a7a4a;
+        --err: #a33a3a;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: 'Inter', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      body {
+        min-height: 100vh;
+        min-height: 100dvh;
+        background-image:
+          radial-gradient(ellipse at top, rgba(255, 250, 240, 0.6), transparent 60%),
+          radial-gradient(ellipse at bottom right, rgba(138, 106, 59, 0.08), transparent 50%);
+        padding: 28px 22px 48px;
+      }
+      .frame { max-width: 480px; margin: 0 auto; }
+
+      /* ---- Brautpaar-Header ---- */
+      .hero {
+        text-align: center;
+        margin-bottom: 24px;
+      }
+      .couple-photo-wrap {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 18px;
+      }
+      .couple-photo {
+        width: 160px;
+        height: 160px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #fff;
+        box-shadow:
+          0 0 0 1px var(--line),
+          0 20px 40px -15px rgba(94, 72, 38, 0.35);
+        background: var(--bg-2);
+      }
+      .couple-photo.placeholder {
+        display: grid;
+        place-items: center;
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 56px;
+        color: var(--accent);
+        font-style: italic;
+      }
+      .ornament {
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic;
+        color: var(--accent);
+        font-size: 16px;
+        letter-spacing: 0.12em;
+        margin-bottom: 4px;
+      }
+      .ornament::before, .ornament::after {
+        content: '·';
+        margin: 0 10px;
+        opacity: 0.7;
+      }
+      h1 {
+        font-family: 'Cormorant Garamond', serif;
+        font-weight: 500;
+        font-size: clamp(30px, 7.5vw, 42px);
+        letter-spacing: 0.01em;
+        margin: 0 0 10px;
+        line-height: 1.1;
+      }
+      .welcome {
+        color: var(--ink-soft);
+        font-size: 15px;
+        line-height: 1.55;
+        max-width: 360px;
+        margin: 0 auto;
+        white-space: pre-wrap;
+      }
+      .welcome.default {
+        font-style: italic;
+      }
+
+      /* ---- Card ---- */
+      .card {
+        background: #fdfaf4;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 22px;
+        box-shadow:
+          0 1px 0 rgba(255, 255, 255, 0.8) inset,
+          0 20px 50px -30px rgba(94, 72, 38, 0.35);
+      }
+      label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        margin-bottom: 6px;
+        color: var(--ink);
+        letter-spacing: 0.02em;
+      }
+      input[type='text'], textarea {
+        width: 100%;
+        background: #fffdf7;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px 14px;
+        font-family: inherit;
+        font-size: 16px;
+        color: var(--ink);
+        transition: border-color 0.15s, box-shadow 0.15s;
+      }
+      input[type='text']:focus, textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(138, 106, 59, 0.15);
+      }
+      textarea { resize: none; min-height: 72px; }
+      .field { margin-bottom: 16px; }
+      .drop {
+        border: 1.5px dashed var(--line);
+        border-radius: 14px;
+        padding: 26px 16px;
+        text-align: center;
+        background: #fffdf7;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .drop:hover, .drop.drag {
+        border-color: var(--accent);
+        background: #fffaed;
+      }
+      .drop-icon { font-size: 32px; margin-bottom: 8px; display: block; }
+      .drop-text { font-size: 15px; color: var(--ink); }
+      .drop-hint { font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
+      #file { display: none; }
+      .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+        gap: 8px;
+        margin-top: 14px;
+      }
+      .preview-item {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--bg-2);
+      }
+      .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+      .preview-item .rm {
+        position: absolute;
+        top: 4px; right: 4px;
+        width: 22px; height: 22px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        border: none;
+        font-size: 14px;
+        line-height: 1;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+      }
+      button.submit {
+        width: 100%;
+        margin-top: 18px;
+        padding: 15px;
+        background: var(--accent-deep);
+        color: #fdfaf4;
+        border: none;
+        border-radius: 12px;
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 20px;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+        transition: background 0.15s, transform 0.05s;
+      }
+      button.submit:hover:not(:disabled) { background: #4a3820; }
+      button.submit:active { transform: scale(0.99); }
+      button.submit:disabled { opacity: 0.6; cursor: not-allowed; }
+      .progress {
+        margin-top: 14px;
+        height: 6px;
+        background: var(--bg-2);
+        border-radius: 999px;
+        overflow: hidden;
+        display: none;
+      }
+      .progress.show { display: block; }
+      .progress-bar {
+        height: 100%;
+        width: 0%;
+        background: var(--accent);
+        transition: width 0.2s;
+      }
+      .status {
+        margin-top: 14px;
+        padding: 12px 14px;
+        border-radius: 10px;
+        font-size: 14px;
+        display: none;
+      }
+      .status.show { display: block; }
+      .status.ok {
+        background: rgba(74, 122, 74, 0.12);
+        color: var(--ok);
+        border: 1px solid rgba(74, 122, 74, 0.25);
+      }
+      .status.err {
+        background: rgba(163, 58, 58, 0.1);
+        color: var(--err);
+        border: 1px solid rgba(163, 58, 58, 0.25);
+      }
+      .success-panel { text-align: center; padding: 30px 10px 10px; }
+      .success-panel .big {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 28px;
+        font-style: italic;
+        color: var(--accent-deep);
+        margin-bottom: 8px;
+      }
+      .success-panel .small {
+        color: var(--ink-soft);
+        font-size: 14px;
+        margin-bottom: 20px;
+      }
+      .ghost-btn {
+        background: transparent;
+        border: 1px solid var(--line);
+        color: var(--ink);
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      .ghost-btn:hover { background: var(--bg-2); }
+    </style>
+  </head>
+  <body>
+    <div class="frame">
+      <header class="hero">
+        <div class="couple-photo-wrap">
+          <img class="couple-photo" id="couplePhoto" alt="" style="display:none" />
+          <div class="couple-photo placeholder" id="couplePlaceholder">&amp;</div>
+        </div>
+        <div class="ornament" id="ornament">mit Liebe geteilt</div>
+        <h1 id="coupleNames">Eure Momente</h1>
+        <p class="welcome default" id="welcome">
+          Teilt eure schönsten Bilder von heute — sie erscheinen direkt auf unserer Fotowand.
+        </p>
+      </header>
+
+      <div class="card" id="form-card">
+        <div class="field">
+          <label for="name">Euer Name</label>
+          <input id="name" type="text" placeholder="z. B. Anna & Tom" maxlength="60" />
+        </div>
+
+        <div class="field">
+          <label for="message">Nachricht (optional)</label>
+          <textarea
+            id="message"
+            placeholder="Ein kurzer Gruß für das Brautpaar…"
+            maxlength="200"
+          ></textarea>
+        </div>
+
+        <div class="field">
+          <label>Fotos</label>
+          <label class="drop" id="drop" for="file">
+            <span class="drop-icon">📸</span>
+            <span class="drop-text">Fotos auswählen</span>
+            <span class="drop-hint">Mehrere gleichzeitig möglich</span>
+          </label>
+          <input id="file" type="file" accept="image/*" multiple />
+          <div class="preview-grid" id="preview"></div>
+        </div>
+
+        <div class="progress" id="progress">
+          <div class="progress-bar" id="bar"></div>
+        </div>
+
+        <div class="status" id="status"></div>
+
+        <button class="submit" id="submit" disabled>Hochladen</button>
+      </div>
+
+      <div class="card success-panel" id="success-card" style="display: none">
+        <div class="big">Vielen Dank!</div>
+        <div class="small">Euer Foto erscheint gleich auf der Fotowand.</div>
+        <button class="ghost-btn" id="again">Noch eins hochladen</button>
+      </div>
+    </div>
+
+    <script>
+      // ---------- Event-Einstellungen laden ----------
+      (async function loadEventSettings() {
+        try {
+          const res = await fetch('/api/settings', { cache: 'no-store' });
+          if (!res.ok) return;
+          const s = await res.json();
+
+          if (s.couplePhotoUrl) {
+            const img = document.getElementById('couplePhoto');
+            img.src = s.couplePhotoUrl;
+            img.onload = () => {
+              document.getElementById('couplePlaceholder').style.display = 'none';
+              img.style.display = '';
+            };
+          }
+
+          if (s.coupleNames && s.coupleNames.trim()) {
+            document.getElementById('coupleNames').textContent = s.coupleNames;
+            document.getElementById('ornament').textContent = 'mit Liebe geteilt';
+          }
+
+          if (s.welcomeText && s.welcomeText.trim()) {
+            const w = document.getElementById('welcome');
+            w.textContent = s.welcomeText;
+            w.classList.remove('default');
+          }
+        } catch (e) {
+          // Falls Einstellungen nicht erreichbar → Defaults anzeigen
+          console.warn('Event-Einstellungen nicht ladbar', e);
+        }
+      })();
+
+      // ---------- Upload-Logik ----------
+      const fileInput = document.getElementById('file');
+      const drop = document.getElementById('drop');
+      const preview = document.getElementById('preview');
+      const submitBtn = document.getElementById('submit');
+      const nameEl = document.getElementById('name');
+      const msgEl = document.getElementById('message');
+      const statusEl = document.getElementById('status');
+      const progressEl = document.getElementById('progress');
+      const barEl = document.getElementById('bar');
+      const formCard = document.getElementById('form-card');
+      const successCard = document.getElementById('success-card');
+      const againBtn = document.getElementById('again');
+
+      let queue = [];
+
+      function render() {
+        preview.innerHTML = '';
+        queue.forEach((f, i) => {
+          const url = URL.createObjectURL(f);
+          const item = document.createElement('div');
+          item.className = 'preview-item';
+          item.innerHTML =
+            '<img src="' + url + '" alt=""><button class="rm" aria-label="Entfernen">×</button>';
+          item.querySelector('.rm').onclick = (e) => {
+            e.preventDefault();
+            queue.splice(i, 1);
+            render();
+            updateBtn();
+          };
+          preview.appendChild(item);
+        });
+      }
+
+      function updateBtn() {
+        submitBtn.disabled = queue.length === 0;
+        submitBtn.textContent =
+          queue.length > 1 ? 'Hochladen (' + queue.length + ' Fotos)' : 'Hochladen';
+      }
+
+      function addFiles(files) {
+        for (const f of files) if (f.type.startsWith('image/')) queue.push(f);
+        render();
+        updateBtn();
+      }
+
+      fileInput.addEventListener('change', (e) => addFiles(e.target.files));
+
+      ['dragenter', 'dragover'].forEach((ev) =>
+        drop.addEventListener(ev, (e) => {
+          e.preventDefault();
+          drop.classList.add('drag');
+        })
+      );
+      ['dragleave', 'drop'].forEach((ev) =>
+        drop.addEventListener(ev, (e) => {
+          e.preventDefault();
+          drop.classList.remove('drag');
+        })
+      );
+      drop.addEventListener('drop', (e) => {
+        if (e.dataTransfer?.files) addFiles(e.dataTransfer.files);
+      });
+
+      function showStatus(msg, kind) {
+        statusEl.textContent = msg;
+        statusEl.className = 'status show ' + kind;
+      }
+      function hideStatus() {
+        statusEl.className = 'status';
+      }
+
+      async function uploadOne(file, sig, onProgress) {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('api_key', sig.apiKey);
+        fd.append('timestamp', sig.timestamp);
+        fd.append('signature', sig.signature);
+        fd.append('folder', sig.folder);
+        fd.append('context', sig.context);
+
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', 'https://api.cloudinary.com/v1_1/' + sig.cloudName + '/image/upload');
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) onProgress(e.loaded / e.total);
+          };
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText));
+            else reject(new Error('Upload fehlgeschlagen (' + xhr.status + ')'));
+          };
+          xhr.onerror = () => reject(new Error('Netzwerkfehler'));
+          xhr.send(fd);
+        });
+      }
+
+      submitBtn.addEventListener('click', async () => {
+        if (queue.length === 0) return;
+        hideStatus();
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Hochladen…';
+        progressEl.classList.add('show');
+        barEl.style.width = '0%';
+
+        try {
+          const sigRes = await fetch('/api/sign-upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: nameEl.value.trim(),
+              message: msgEl.value.trim(),
+              mode: 'guest',
+            }),
+          });
+          if (!sigRes.ok) throw new Error('Server nicht erreichbar');
+          const sig = await sigRes.json();
+
+          const total = queue.length;
+          for (let i = 0; i < total; i++) {
+            await uploadOne(queue[i], sig, (p) => {
+              const overall = ((i + p) / total) * 100;
+              barEl.style.width = overall + '%';
+            });
+          }
+
+          barEl.style.width = '100%';
+          setTimeout(() => {
+            formCard.style.display = 'none';
+            successCard.style.display = 'block';
+          }, 300);
+        } catch (err) {
+          console.error(err);
+          showStatus(
+            'Das hat leider nicht geklappt: ' + err.message + '. Bitte noch einmal versuchen.',
+            'err'
+          );
+          submitBtn.disabled = false;
+          updateBtn();
+          progressEl.classList.remove('show');
+        }
+      });
+
+      againBtn.addEventListener('click', () => {
+        queue = [];
+        fileInput.value = '';
+        render();
+        updateBtn();
+        progressEl.classList.remove('show');
+        barEl.style.width = '0%';
+        hideStatus();
+        successCard.style.display = 'none';
+        formCard.style.display = 'block';
+      });
+    </script>
+  </body>
+</html>

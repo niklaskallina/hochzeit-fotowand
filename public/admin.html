@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin · Fotowand</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f6f1e8;
+        --bg-2: #efe6d4;
+        --ink: #2a2623;
+        --ink-soft: #6b625b;
+        --accent: #8a6a3b;
+        --accent-deep: #5e4826;
+        --line: #d9cfbd;
+        --ok: #4a7a4a;
+        --err: #a33a3a;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0; padding: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: 'Inter', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      body { min-height: 100vh; padding: 30px 20px 60px; }
+      .wrap { max-width: 600px; margin: 0 auto; }
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .header h1 {
+        font-family: 'Cormorant Garamond', serif;
+        font-weight: 500;
+        font-size: 36px;
+        margin: 0 0 6px;
+      }
+      .header p {
+        color: var(--ink-soft);
+        font-size: 14px;
+        margin: 0;
+      }
+
+      .card {
+        background: #fdfaf4;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 40px -25px rgba(94, 72, 38, 0.35);
+      }
+      .card h2 {
+        font-family: 'Cormorant Garamond', serif;
+        font-weight: 500;
+        font-size: 22px;
+        margin: 0 0 4px;
+      }
+      .card .hint {
+        font-size: 13px;
+        color: var(--ink-soft);
+        margin-bottom: 18px;
+      }
+
+      label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        margin-bottom: 6px;
+      }
+      input[type='text'], input[type='password'], textarea {
+        width: 100%;
+        background: #fffdf7;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px 14px;
+        font-family: inherit;
+        font-size: 15px;
+        color: var(--ink);
+      }
+      input:focus, textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(138, 106, 59, 0.15);
+      }
+      textarea { resize: vertical; min-height: 90px; }
+      .field { margin-bottom: 16px; }
+
+      .photo-row {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+      }
+      .photo-preview {
+        width: 120px; height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 1px var(--line), 0 10px 30px -15px rgba(94, 72, 38, 0.35);
+        background: var(--bg-2);
+        flex-shrink: 0;
+      }
+      .photo-preview.empty {
+        display: grid;
+        place-items: center;
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 42px;
+        font-style: italic;
+        color: var(--accent);
+      }
+      .photo-actions { flex: 1; padding-top: 4px; }
+      .photo-actions .tip {
+        font-size: 12px;
+        color: var(--ink-soft);
+        margin-top: 6px;
+        line-height: 1.5;
+      }
+      #photoInput { display: none; }
+      .btn {
+        display: inline-block;
+        padding: 9px 16px;
+        background: var(--accent-deep);
+        color: #fdfaf4;
+        border: none;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 14px;
+        cursor: pointer;
+        text-decoration: none;
+      }
+      .btn:hover:not(:disabled) { background: #4a3820; }
+      .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+      .btn.secondary {
+        background: transparent;
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+      .btn.secondary:hover:not(:disabled) { background: var(--bg-2); }
+
+      .save-row {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        align-items: center;
+        margin-top: 10px;
+      }
+      .status {
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        display: none;
+        flex: 1;
+      }
+      .status.show { display: block; }
+      .status.ok {
+        background: rgba(74, 122, 74, 0.12);
+        color: var(--ok);
+        border: 1px solid rgba(74, 122, 74, 0.25);
+      }
+      .status.err {
+        background: rgba(163, 58, 58, 0.1);
+        color: var(--err);
+        border: 1px solid rgba(163, 58, 58, 0.25);
+      }
+      .progress {
+        height: 4px;
+        background: var(--bg-2);
+        border-radius: 999px;
+        overflow: hidden;
+        margin-top: 8px;
+        display: none;
+      }
+      .progress.show { display: block; }
+      .progress-bar {
+        height: 100%; width: 0%;
+        background: var(--accent);
+        transition: width 0.2s;
+      }
+      .gate {
+        text-align: center;
+        padding: 40px 20px;
+      }
+      .gate h2 {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 28px;
+        margin: 0 0 6px;
+      }
+      .gate p {
+        color: var(--ink-soft);
+        margin: 0 0 20px;
+        font-size: 14px;
+      }
+      .gate input {
+        max-width: 280px;
+        margin: 0 auto 12px;
+      }
+      .links {
+        text-align: center;
+        margin-top: 24px;
+        font-size: 13px;
+        color: var(--ink-soft);
+      }
+      .links a {
+        color: var(--accent-deep);
+        margin: 0 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="header">
+        <h1>Fotowand · Admin</h1>
+        <p>Brautpaar-Bild und Begrüßungstext für die Upload-Seite festlegen</p>
+      </div>
+
+      <!-- Login-Gate -->
+      <div class="card gate" id="gate">
+        <h2>Anmelden</h2>
+        <p>Bitte Admin-Passwort eingeben</p>
+        <div class="field">
+          <input id="pwInput" type="password" placeholder="Admin-Passwort" autocomplete="current-password" />
+        </div>
+        <button class="btn" id="pwBtn">Weiter</button>
+        <div class="status" id="gateStatus" style="margin-top: 14px"></div>
+      </div>
+
+      <!-- Admin-Bereich -->
+      <div id="admin" style="display: none">
+        <!-- Brautpaar-Bild -->
+        <div class="card">
+          <h2>Brautpaar-Bild</h2>
+          <div class="hint">Wird oben auf der Upload-Seite als rundes Bild angezeigt (ca. 500 × 500 px empfohlen).</div>
+          <div class="photo-row">
+            <img class="photo-preview" id="photoPreview" alt="" style="display:none" />
+            <div class="photo-preview empty" id="photoEmpty">&amp;</div>
+            <div class="photo-actions">
+              <input id="photoInput" type="file" accept="image/*" />
+              <label for="photoInput" class="btn">Bild auswählen</label>
+              <button class="btn secondary" id="removePhoto" style="display:none; margin-left: 6px">Entfernen</button>
+              <div class="tip">Quadratisches Bild funktioniert am besten. Es wird automatisch rund zugeschnitten.</div>
+              <div class="progress" id="photoProgress"><div class="progress-bar" id="photoBar"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Texte -->
+        <div class="card">
+          <h2>Texte</h2>
+          <div class="hint">Beide Felder sind optional. Leer lassen für Standardtexte.</div>
+
+          <div class="field">
+            <label for="couple">Brautpaar-Namen</label>
+            <input id="couple" type="text" placeholder="z. B. Anna & Tom" maxlength="100" />
+          </div>
+
+          <div class="field">
+            <label for="welcome">Begrüßungstext</label>
+            <textarea id="welcome" placeholder="Teilt eure schönsten Bilder von heute — sie erscheinen direkt auf unserer Fotowand." maxlength="500"></textarea>
+          </div>
+
+          <div class="save-row">
+            <div class="status" id="saveStatus"></div>
+            <button class="btn" id="saveBtn">Speichern</button>
+          </div>
+        </div>
+
+        <div class="links">
+          <a href="/" target="_blank">Upload-Seite ansehen</a>·
+          <a href="/slideshow" target="_blank">Slideshow ansehen</a>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const gate = document.getElementById('gate');
+      const admin = document.getElementById('admin');
+      const pwInput = document.getElementById('pwInput');
+      const pwBtn = document.getElementById('pwBtn');
+      const gateStatus = document.getElementById('gateStatus');
+
+      const photoInput = document.getElementById('photoInput');
+      const photoPreview = document.getElementById('photoPreview');
+      const photoEmpty = document.getElementById('photoEmpty');
+      const removePhotoBtn = document.getElementById('removePhoto');
+      const photoProgress = document.getElementById('photoProgress');
+      const photoBar = document.getElementById('photoBar');
+
+      const coupleEl = document.getElementById('couple');
+      const welcomeEl = document.getElementById('welcome');
+      const saveBtn = document.getElementById('saveBtn');
+      const saveStatus = document.getElementById('saveStatus');
+
+      let password = sessionStorage.getItem('adminPw') || '';
+      let currentSettings = { coupleNames: '', welcomeText: '', couplePhotoUrl: '' };
+
+      function showStatus(el, msg, kind) {
+        el.textContent = msg;
+        el.className = 'status show ' + kind;
+        if (kind === 'ok') setTimeout(() => (el.className = 'status'), 3000);
+      }
+
+      function setPhoto(url) {
+        currentSettings.couplePhotoUrl = url || '';
+        if (url) {
+          photoPreview.src = url;
+          photoPreview.style.display = '';
+          photoEmpty.style.display = 'none';
+          removePhotoBtn.style.display = '';
+        } else {
+          photoPreview.style.display = 'none';
+          photoEmpty.style.display = '';
+          removePhotoBtn.style.display = 'none';
+        }
+      }
+
+      async function loadCurrent() {
+        try {
+          const res = await fetch('/api/settings');
+          if (!res.ok) return;
+          const s = await res.json();
+          currentSettings = s;
+          coupleEl.value = s.coupleNames || '';
+          welcomeEl.value = s.welcomeText || '';
+          setPhoto(s.couplePhotoUrl);
+        } catch (e) { console.warn(e); }
+      }
+
+      async function enterAdmin() {
+        const pw = pwInput.value;
+        if (!pw) {
+          showStatus(gateStatus, 'Bitte Passwort eingeben', 'err');
+          return;
+        }
+        // Login-Probe: wir lesen erst die aktuellen Settings (öffentlich),
+        // speichern sie dann unverändert mit dem Passwort zurück.
+        // Bei falschem PW → 401, Settings bleiben unberührt.
+        try {
+          const getRes = await fetch('/api/settings');
+          const current = getRes.ok
+            ? await getRes.json()
+            : { coupleNames: '', welcomeText: '', couplePhotoUrl: '' };
+
+          const probeRes = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
+            body: JSON.stringify({
+              coupleNames: current.coupleNames || '',
+              welcomeText: current.welcomeText || '',
+              couplePhotoUrl: current.couplePhotoUrl || '',
+            }),
+          });
+          if (probeRes.status === 401) {
+            showStatus(gateStatus, 'Passwort ist falsch', 'err');
+            return;
+          }
+          if (!probeRes.ok) throw new Error('Server-Fehler');
+
+          password = pw;
+          sessionStorage.setItem('adminPw', pw);
+          gate.style.display = 'none';
+          admin.style.display = 'block';
+          currentSettings = current;
+          coupleEl.value = current.coupleNames || '';
+          welcomeEl.value = current.welcomeText || '';
+          setPhoto(current.couplePhotoUrl);
+        } catch (e) {
+          showStatus(gateStatus, 'Server nicht erreichbar', 'err');
+        }
+      }
+
+      pwBtn.addEventListener('click', enterAdmin);
+      pwInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') enterAdmin();
+      });
+
+      // ---- Brautpaar-Bild hochladen ----
+      photoInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        photoProgress.classList.add('show');
+        photoBar.style.width = '0%';
+        try {
+          const sigRes = await fetch('/api/sign-upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
+            body: JSON.stringify({ mode: 'couple' }),
+          });
+          if (!sigRes.ok) throw new Error('Signatur fehlgeschlagen');
+          const sig = await sigRes.json();
+
+          const fd = new FormData();
+          fd.append('file', file);
+          fd.append('api_key', sig.apiKey);
+          fd.append('timestamp', sig.timestamp);
+          fd.append('signature', sig.signature);
+          fd.append('folder', sig.folder);
+          fd.append('public_id', sig.publicId);
+          fd.append('overwrite', 'true');
+          fd.append('invalidate', 'true');
+
+          const uploadRes = await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', 'https://api.cloudinary.com/v1_1/' + sig.cloudName + '/image/upload');
+            xhr.upload.onprogress = (ev) => {
+              if (ev.lengthComputable) photoBar.style.width = (ev.loaded / ev.total) * 100 + '%';
+            };
+            xhr.onload = () => {
+              if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText));
+              else reject(new Error('Upload (' + xhr.status + ')'));
+            };
+            xhr.onerror = () => reject(new Error('Netzwerkfehler'));
+            xhr.send(fd);
+          });
+
+          // Cache-Buster anhängen, damit das alte Bild nicht angezeigt wird
+          const urlWithBust = uploadRes.secure_url + '?v=' + Date.now();
+          setPhoto(urlWithBust);
+
+          // Settings gleich speichern (nur das Foto-Feld aktualisieren)
+          await saveSettings(true);
+          showStatus(saveStatus, 'Brautpaar-Bild aktualisiert', 'ok');
+        } catch (err) {
+          console.error(err);
+          showStatus(saveStatus, 'Upload fehlgeschlagen: ' + err.message, 'err');
+        } finally {
+          photoProgress.classList.remove('show');
+          photoInput.value = '';
+        }
+      });
+
+      removePhotoBtn.addEventListener('click', async () => {
+        if (!confirm('Brautpaar-Bild wirklich entfernen?')) return;
+        setPhoto('');
+        await saveSettings(true);
+        showStatus(saveStatus, 'Brautpaar-Bild entfernt', 'ok');
+      });
+
+      // ---- Texte speichern ----
+      async function saveSettings(silent) {
+        const body = {
+          coupleNames: coupleEl.value.trim(),
+          welcomeText: welcomeEl.value.trim(),
+          couplePhotoUrl: currentSettings.couplePhotoUrl || '',
+        };
+        try {
+          const res = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
+            body: JSON.stringify(body),
+          });
+          if (!res.ok) throw new Error('Speichern fehlgeschlagen');
+          const data = await res.json();
+          currentSettings = data.settings || body;
+          if (!silent) showStatus(saveStatus, 'Gespeichert', 'ok');
+        } catch (err) {
+          showStatus(saveStatus, 'Fehler: ' + err.message, 'err');
+          throw err;
+        }
+      }
+
+      saveBtn.addEventListener('click', () => saveSettings(false));
+
+      // ---- Auto-Login falls Passwort im SessionStorage ----
+      if (password) {
+        pwInput.value = password;
+        enterAdmin();
+      }
+    </script>
+  </body>
+</html>

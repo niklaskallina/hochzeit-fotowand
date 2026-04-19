@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fotowand</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0e0b08;
+        --ink: #f4ebd9;
+        --accent: #c4a26a;
+        --accent-soft: rgba(196, 162, 106, 0.6);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: 'Inter', sans-serif;
+        height: 100vh;
+        overflow: hidden;
+        cursor: none;
+      }
+      body.show-cursor {
+        cursor: auto;
+      }
+      .stage {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(
+            ellipse at center,
+            rgba(40, 30, 20, 0.4),
+            var(--bg) 70%
+          );
+      }
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        opacity: 0;
+        transition: opacity 1.2s ease-in-out;
+        padding: 4vh 4vw;
+      }
+      .slide.active {
+        opacity: 1;
+      }
+      .slide img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        border-radius: 6px;
+        box-shadow:
+          0 30px 80px -30px rgba(0, 0, 0, 0.7),
+          0 0 0 1px rgba(255, 255, 255, 0.04);
+        transform: scale(1);
+        transition: transform 8s ease-out;
+      }
+      .slide.active img {
+        transform: scale(1.04);
+      }
+      .caption {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 4vh 6vw;
+        background: linear-gradient(
+          to top,
+          rgba(0, 0, 0, 0.75) 0%,
+          rgba(0, 0, 0, 0.4) 50%,
+          transparent 100%
+        );
+        transform: translateY(20px);
+        opacity: 0;
+        transition: opacity 0.8s 0.3s, transform 0.8s 0.3s;
+        pointer-events: none;
+      }
+      .slide.active .caption {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .caption-inner {
+        max-width: 900px;
+      }
+      .caption .from {
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic;
+        font-size: clamp(16px, 2vw, 22px);
+        color: var(--accent);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+      .caption .msg {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: clamp(22px, 3.5vw, 44px);
+        font-weight: 400;
+        line-height: 1.25;
+        color: var(--ink);
+      }
+
+      /* Warte-Bildschirm wenn noch keine Bilder da sind */
+      .waiting {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        padding: 40px;
+        z-index: 5;
+        transition: opacity 0.8s;
+      }
+      .waiting.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .waiting .ornament {
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic;
+        color: var(--accent);
+        font-size: clamp(16px, 2vw, 22px);
+        letter-spacing: 0.15em;
+        margin-bottom: 16px;
+      }
+      .waiting .ornament::before,
+      .waiting .ornament::after {
+        content: '·';
+        margin: 0 14px;
+        opacity: 0.6;
+      }
+      .waiting h1 {
+        font-family: 'Cormorant Garamond', serif;
+        font-weight: 400;
+        font-size: clamp(40px, 7vw, 88px);
+        line-height: 1.1;
+        margin: 0 0 20px;
+      }
+      .waiting p {
+        font-size: clamp(16px, 1.6vw, 22px);
+        color: var(--accent-soft);
+        max-width: 600px;
+        line-height: 1.6;
+      }
+
+      /* Einstellungs-Overlay */
+      .controls {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 20;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      body.show-cursor .controls {
+        opacity: 1;
+      }
+      .controls-btn {
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: var(--ink);
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      .panel {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(14, 11, 8, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(196, 162, 106, 0.3);
+        border-radius: 14px;
+        padding: 20px;
+        min-width: 280px;
+        z-index: 30;
+        display: none;
+        font-size: 14px;
+      }
+      .panel.show {
+        display: block;
+      }
+      .panel h3 {
+        margin: 0 0 14px;
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 22px;
+        font-weight: 500;
+        color: var(--accent);
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        gap: 12px;
+      }
+      .row label {
+        color: var(--ink);
+        font-size: 13px;
+      }
+      .row input[type='number'] {
+        width: 70px;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: var(--ink);
+        padding: 6px 8px;
+        border-radius: 6px;
+        font-family: inherit;
+        text-align: center;
+      }
+      .row input[type='checkbox'] {
+        accent-color: var(--accent);
+        width: 16px;
+        height: 16px;
+      }
+      .hint {
+        font-size: 11px;
+        color: rgba(244, 235, 217, 0.5);
+        margin-top: 2px;
+      }
+      .panel-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 14px;
+      }
+      .panel-actions button {
+        flex: 1;
+        padding: 8px;
+        background: var(--accent);
+        border: none;
+        color: #000;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 13px;
+        cursor: pointer;
+        font-weight: 500;
+      }
+      .panel-actions button.secondary {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: var(--ink);
+      }
+      .counter {
+        position: fixed;
+        bottom: 20px;
+        right: 24px;
+        font-size: 12px;
+        color: rgba(244, 235, 217, 0.3);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.05em;
+        z-index: 15;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      body.show-cursor .counter {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage" id="stage">
+      <div class="slide" id="slide-a">
+        <img alt="" />
+        <div class="caption">
+          <div class="caption-inner">
+            <div class="from"></div>
+            <div class="msg"></div>
+          </div>
+        </div>
+      </div>
+      <div class="slide" id="slide-b">
+        <img alt="" />
+        <div class="caption">
+          <div class="caption-inner">
+            <div class="from"></div>
+            <div class="msg"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="waiting" id="waiting">
+      <div>
+        <div class="ornament">willkommen</div>
+        <h1>Eure Fotowand</h1>
+        <p>
+          Scannt den QR-Code auf eurem Platz und teilt eure schönsten Momente —
+          sie erscheinen hier live.
+        </p>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="controls-btn" id="openPanel">Einstellungen</button>
+    </div>
+
+    <div class="panel" id="panel">
+      <h3>Slideshow-Einstellungen</h3>
+      <div class="row">
+        <div>
+          <label for="durationInput">Anzeigedauer (Sek.)</label>
+          <div class="hint">pro Bild</div>
+        </div>
+        <input id="durationInput" type="number" min="2" max="60" step="1" value="7" />
+      </div>
+      <div class="row">
+        <div>
+          <label for="randomInput">Zufällig mischen</label>
+          <div class="hint">sonst chronologisch</div>
+        </div>
+        <input id="randomInput" type="checkbox" />
+      </div>
+      <div class="row">
+        <div>
+          <label for="newFirstInput">Neue Uploads bevorzugt</label>
+          <div class="hint">erscheinen als nächstes</div>
+        </div>
+        <input id="newFirstInput" type="checkbox" checked />
+      </div>
+      <div class="row">
+        <div>
+          <label for="captionsInput">Namen & Nachrichten</label>
+          <div class="hint">auf Fotos einblenden</div>
+        </div>
+        <input id="captionsInput" type="checkbox" checked />
+      </div>
+      <div class="panel-actions">
+        <button class="secondary" id="closePanel">Schließen</button>
+        <button id="saveSettings">Speichern</button>
+      </div>
+    </div>
+
+    <div class="counter" id="counter"></div>
+
+    <script>
+      // ---- Einstellungen (im localStorage gespeichert, außer auf Artifact-Plattformen)
+      const DEFAULTS = {
+        durationSec: 7,
+        random: false,
+        newFirst: true,
+        captions: true,
+      };
+      function loadSettings() {
+        try {
+          const raw = localStorage.getItem('slideshow-settings');
+          if (raw) return { ...DEFAULTS, ...JSON.parse(raw) };
+        } catch (e) {}
+        return { ...DEFAULTS };
+      }
+      function saveSettings(s) {
+        try {
+          localStorage.setItem('slideshow-settings', JSON.stringify(s));
+        } catch (e) {}
+      }
+      let settings = loadSettings();
+
+      // ---- State
+      const slideA = document.getElementById('slide-a');
+      const slideB = document.getElementById('slide-b');
+      const waiting = document.getElementById('waiting');
+      const counter = document.getElementById('counter');
+
+      let images = []; // Liste aller bekannten Bilder
+      let shownIds = new Set(); // Was schon gezeigt wurde (für "newFirst")
+      let playlist = []; // Reihenfolge der anstehenden Bilder
+      let current = null; // Aktuell angezeigtes Bild
+      let activeSlideEl = slideA;
+      let inactiveSlideEl = slideB;
+      let advanceTimer = null;
+
+      // ---- Bilder vom Server holen
+      async function fetchImages() {
+        try {
+          const res = await fetch('/api/images', { cache: 'no-store' });
+          if (!res.ok) throw new Error('Fetch failed');
+          const data = await res.json();
+          const existingIds = new Set(images.map((i) => i.id));
+          const incoming = data.images || [];
+          const newOnes = incoming.filter((i) => !existingIds.has(i.id));
+
+          images = incoming;
+
+          // Wenn neue Bilder da sind und "newFirst" aktiv → sofort vorne in die Playlist
+          if (settings.newFirst && newOnes.length > 0) {
+            const newIds = new Set(newOnes.map((i) => i.id));
+            // existing playlist entries raus, die neuen Bilder könnten sonst Duplikate sein
+            playlist = playlist.filter((p) => !newIds.has(p.id));
+            playlist = [...newOnes, ...playlist];
+            newOnes.forEach((i) => shownIds.delete(i.id));
+          }
+
+          if (images.length > 0) {
+            waiting.classList.add('hidden');
+            if (!current) startPlayback();
+          } else {
+            waiting.classList.remove('hidden');
+          }
+          updateCounter();
+        } catch (err) {
+          console.error('Fetch-Fehler:', err);
+        }
+      }
+
+      // ---- Playlist (neu) aufbauen, wenn leer
+      function buildPlaylist() {
+        if (images.length === 0) {
+          playlist = [];
+          return;
+        }
+        // Ungezeigte zuerst, dann Rest
+        let pool = images.slice();
+        if (settings.random) {
+          pool = pool
+            .map((v) => [Math.random(), v])
+            .sort((a, b) => a[0] - b[0])
+            .map(([, v]) => v);
+        } else {
+          // Chronologisch (älteste zuerst — so erzählt sich der Tag)
+          pool.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        }
+        playlist = pool;
+        shownIds = new Set();
+      }
+
+      // ---- Nächstes Bild anzeigen
+      function next() {
+        clearTimeout(advanceTimer);
+        if (images.length === 0) {
+          current = null;
+          return;
+        }
+        if (playlist.length === 0) buildPlaylist();
+        if (playlist.length === 0) return;
+
+        const candidate = playlist.shift();
+        // Falls direkt das gleiche Bild (nur 1 Foto vorhanden), trotzdem weiter
+        current = candidate;
+        shownIds.add(current.id);
+        display(current);
+        updateCounter();
+
+        const ms = Math.max(2, settings.durationSec) * 1000;
+        advanceTimer = setTimeout(next, ms);
+      }
+
+      function display(img) {
+        const next = inactiveSlideEl;
+        const prev = activeSlideEl;
+        const imgEl = next.querySelector('img');
+        const fromEl = next.querySelector('.from');
+        const msgEl = next.querySelector('.msg');
+
+        imgEl.onload = () => {
+          next.classList.add('active');
+          prev.classList.remove('active');
+          activeSlideEl = next;
+          inactiveSlideEl = prev;
+        };
+        imgEl.src = img.url;
+        imgEl.alt = img.name || '';
+
+        if (settings.captions && (img.name || img.message)) {
+          fromEl.textContent = img.name ? 'von ' + img.name : '';
+          msgEl.textContent = img.message || '';
+          next.querySelector('.caption').style.display = '';
+        } else {
+          next.querySelector('.caption').style.display = 'none';
+        }
+      }
+
+      function startPlayback() {
+        buildPlaylist();
+        next();
+      }
+
+      function updateCounter() {
+        counter.textContent = images.length + ' Fotos';
+      }
+
+      // ---- Einstellungs-Panel
+      const panel = document.getElementById('panel');
+      const openBtn = document.getElementById('openPanel');
+      const closeBtn = document.getElementById('closePanel');
+      const saveBtn = document.getElementById('saveSettings');
+      const durationInput = document.getElementById('durationInput');
+      const randomInput = document.getElementById('randomInput');
+      const newFirstInput = document.getElementById('newFirstInput');
+      const captionsInput = document.getElementById('captionsInput');
+
+      function syncPanelFromSettings() {
+        durationInput.value = settings.durationSec;
+        randomInput.checked = settings.random;
+        newFirstInput.checked = settings.newFirst;
+        captionsInput.checked = settings.captions;
+      }
+      syncPanelFromSettings();
+
+      openBtn.onclick = () => {
+        syncPanelFromSettings();
+        panel.classList.add('show');
+      };
+      closeBtn.onclick = () => panel.classList.remove('show');
+      saveBtn.onclick = () => {
+        const prevRandom = settings.random;
+        settings = {
+          durationSec: Math.max(2, Math.min(60, Number(durationInput.value) || 7)),
+          random: randomInput.checked,
+          newFirst: newFirstInput.checked,
+          captions: captionsInput.checked,
+        };
+        saveSettings(settings);
+        // Wenn Mischung geändert wurde → Playlist neu aufbauen
+        if (prevRandom !== settings.random) buildPlaylist();
+        panel.classList.remove('show');
+      };
+
+      // ---- Mausbewegung zeigt Cursor + Controls kurz an
+      let cursorTimer = null;
+      document.addEventListener('mousemove', () => {
+        document.body.classList.add('show-cursor');
+        clearTimeout(cursorTimer);
+        cursorTimer = setTimeout(
+          () => document.body.classList.remove('show-cursor'),
+          2500
+        );
+      });
+
+      // ---- Tastatur-Shortcuts: Pfeil rechts = weiter, Leertaste = auch weiter
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === ' ') {
+          e.preventDefault();
+          next();
+        } else if (e.key === 'f' || e.key === 'F') {
+          if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+          else document.exitFullscreen();
+        }
+      });
+
+      // ---- Start: alle 8 Sek. nach neuen Bildern suchen
+      fetchImages();
+      setInterval(fetchImages, 8000);
+    </script>
+  </body>
+</html>

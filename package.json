@@ -1,0 +1,8 @@
+{
+  "name": "hochzeit-fotowand",
+  "version": "1.0.0",
+  "description": "Live-Fotowand für Hochzeit mit Cloudinary",
+  "dependencies": {
+    "cloudinary": "^2.5.1"
+  }
+}

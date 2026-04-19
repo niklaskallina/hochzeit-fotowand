@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QR-Code-Generator · Fotowand</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 30px;
+        background: #f6f1e8;
+        font-family: 'Inter', sans-serif;
+        color: #2a2623;
+      }
+      .controls {
+        max-width: 700px;
+        margin: 0 auto 30px;
+        background: #fff;
+        padding: 24px;
+        border-radius: 14px;
+        border: 1px solid #e4dcca;
+      }
+      .controls h1 {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 28px;
+        font-weight: 500;
+        margin: 0 0 4px;
+      }
+      .controls p {
+        color: #6b625b;
+        font-size: 14px;
+        margin: 0 0 18px;
+      }
+      .field {
+        margin-bottom: 14px;
+      }
+      .field label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        margin-bottom: 4px;
+      }
+      .field input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #d9cfbd;
+        border-radius: 8px;
+        font-size: 15px;
+        font-family: inherit;
+      }
+      button {
+        padding: 10px 20px;
+        background: #5e4826;
+        color: #fdfaf4;
+        border: none;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 14px;
+        cursor: pointer;
+        margin-right: 8px;
+      }
+      button.secondary {
+        background: transparent;
+        color: #5e4826;
+        border: 1px solid #5e4826;
+      }
+      .print-hint {
+        font-size: 12px;
+        color: #6b625b;
+        margin-top: 8px;
+      }
+
+      /* ---------- Druckkarte ---------- */
+      .cards-wrap {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      .card {
+        width: 100mm;
+        height: 148mm; /* A6 */
+        background: #fdfaf4;
+        border: 1px solid #e4dcca;
+        border-radius: 8px;
+        padding: 12mm 10mm;
+        margin: 0 auto 16px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
+      }
+      .card::before,
+      .card::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 1px;
+        background: #c4a26a;
+      }
+      .card::before {
+        top: 8mm;
+      }
+      .card::after {
+        bottom: 8mm;
+      }
+      .card .eyebrow {
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic;
+        color: #8a6a3b;
+        font-size: 13pt;
+        letter-spacing: 0.12em;
+        margin-top: 6mm;
+      }
+      .card h2 {
+        font-family: 'Cormorant Garamond', serif;
+        font-weight: 500;
+        font-size: 22pt;
+        margin: 2mm 0 0;
+        line-height: 1.1;
+      }
+      .card .qr {
+        margin: 2mm 0;
+      }
+      .card .qr canvas,
+      .card .qr img {
+        display: block;
+        width: 55mm;
+        height: 55mm;
+      }
+      .card .instruction {
+        font-size: 10pt;
+        color: #6b625b;
+        line-height: 1.4;
+        max-width: 75mm;
+        margin-bottom: 6mm;
+      }
+      .card .url {
+        font-family: 'Inter', monospace;
+        font-size: 8pt;
+        color: #8a6a3b;
+        word-break: break-all;
+      }
+
+      @media print {
+        body {
+          background: #fff;
+          padding: 0;
+        }
+        .controls {
+          display: none;
+        }
+        .card {
+          page-break-after: always;
+          border: none;
+          margin: 0 auto;
+        }
+        .card:last-child {
+          page-break-after: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="controls">
+      <h1>QR-Code für die Tische</h1>
+      <p>Trage die URL deiner Upload-Seite ein und drucke die Karten aus.</p>
+      <div class="field">
+        <label for="url">URL der Upload-Seite</label>
+        <input
+          id="url"
+          type="text"
+          placeholder="https://deine-hochzeit.vercel.app"
+          value="https://deine-hochzeit.vercel.app"
+        />
+      </div>
+      <div class="field">
+        <label for="names">Brautpaar (optional)</label>
+        <input id="names" type="text" placeholder="Anna & Tom" value="Anna & Tom" />
+      </div>
+      <div class="field">
+        <label for="copies">Anzahl Karten</label>
+        <input id="copies" type="number" min="1" max="50" value="10" />
+      </div>
+      <button id="generate">Karten erzeugen</button>
+      <button class="secondary" onclick="window.print()">Drucken</button>
+      <div class="print-hint">
+        Tipp: Beim Drucken „Randlos" und „Tatsächliche Größe" wählen. Format ist A6
+        — vier Karten passen auf eine A4-Seite, wenn du sie in Word oder Pages
+        zusammenstellst.
+      </div>
+    </div>
+
+    <div class="cards-wrap" id="cards"></div>
+
+    <script>
+      const urlEl = document.getElementById('url');
+      const namesEl = document.getElementById('names');
+      const copiesEl = document.getElementById('copies');
+      const cardsEl = document.getElementById('cards');
+
+      function render() {
+        const url = urlEl.value.trim() || 'https://beispiel.de';
+        const names = namesEl.value.trim();
+        const copies = Math.max(1, Math.min(50, Number(copiesEl.value) || 1));
+        cardsEl.innerHTML = '';
+
+        for (let i = 0; i < copies; i++) {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML =
+            '<div>' +
+            '<div class="eyebrow">Teilt eure Momente</div>' +
+            (names ? '<h2>' + names + '</h2>' : '') +
+            '</div>' +
+            '<div class="qr"><canvas></canvas></div>' +
+            '<div class="instruction">QR-Code scannen und eure schönsten Fotos von heute hochladen — sie erscheinen live auf unserer Fotowand.</div>' +
+            '<div class="url">' +
+            url +
+            '</div>';
+          cardsEl.appendChild(card);
+          const canvas = card.querySelector('canvas');
+          QRCode.toCanvas(
+            canvas,
+            url,
+            { width: 520, margin: 1, color: { dark: '#2a2623', light: '#fdfaf4' } },
+            (err) => {
+              if (err) console.error(err);
+            }
+          );
+        }
+      }
+
+      document.getElementById('generate').onclick = render;
+      render();
+    </script>
+  </body>
+</html>
