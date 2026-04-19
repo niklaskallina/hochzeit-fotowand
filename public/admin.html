@@ -243,7 +243,7 @@
               <input id="photoInput" type="file" accept="image/*" />
               <label for="photoInput" class="btn">Bild auswählen</label>
               <button class="btn secondary" id="removePhoto" style="display:none; margin-left: 6px">Entfernen</button>
-              <div class="tip">Quadratisches Bild funktioniert am besten. Es wird automatisch rund zugeschnitten.</div>
+              <div class="tip">Quadratisches Bild funktioniert am besten. Nach dem Hochladen unten auf „Alles speichern" klicken.</div>
               <div class="progress" id="photoProgress"><div class="progress-bar" id="photoBar"></div></div>
             </div>
           </div>
@@ -266,7 +266,7 @@
 
           <div class="save-row">
             <div class="status" id="saveStatus"></div>
-            <button class="btn" id="saveBtn">Speichern</button>
+            <button class="btn" id="saveBtn">Alles speichern</button>
           </div>
         </div>
 
@@ -297,7 +297,7 @@
       const saveStatus = document.getElementById('saveStatus');
 
       let password = sessionStorage.getItem('adminPw') || '';
-      let currentSettings = { coupleNames: '', welcomeText: '', couplePhotoUrl: '' };
+      let currentPhotoUrl = ''; // lokale Kopie der aktuellen Brautpaar-Bild-URL
 
       function showStatus(el, msg, kind) {
         el.textContent = msg;
@@ -306,7 +306,7 @@
       }
 
       function setPhoto(url) {
-        currentSettings.couplePhotoUrl = url || '';
+        currentPhotoUrl = url || '';
         if (url) {
           photoPreview.src = url;
           photoPreview.style.display = '';
@@ -321,14 +321,15 @@
 
       async function loadCurrent() {
         try {
-          const res = await fetch('/api/settings');
+          const res = await fetch('/api/settings', { cache: 'no-store' });
           if (!res.ok) return;
           const s = await res.json();
-          currentSettings = s;
           coupleEl.value = s.coupleNames || '';
           welcomeEl.value = s.welcomeText || '';
-          setPhoto(s.couplePhotoUrl);
-        } catch (e) { console.warn(e); }
+          setPhoto(s.couplePhotoUrl || '');
+        } catch (e) {
+          console.warn('Settings nicht ladbar', e);
+        }
       }
 
       async function enterAdmin() {
@@ -337,38 +338,25 @@
           showStatus(gateStatus, 'Bitte Passwort eingeben', 'err');
           return;
         }
-        // Login-Probe: wir lesen erst die aktuellen Settings (öffentlich),
-        // speichern sie dann unverändert mit dem Passwort zurück.
-        // Bei falschem PW → 401, Settings bleiben unberührt.
+        // Reine Auth-Prüfung via HEAD — ändert keine Daten
         try {
-          const getRes = await fetch('/api/settings');
-          const current = getRes.ok
-            ? await getRes.json()
-            : { coupleNames: '', welcomeText: '', couplePhotoUrl: '' };
-
-          const probeRes = await fetch('/api/settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-admin-password': pw },
-            body: JSON.stringify({
-              coupleNames: current.coupleNames || '',
-              welcomeText: current.welcomeText || '',
-              couplePhotoUrl: current.couplePhotoUrl || '',
-            }),
+          const res = await fetch('/api/settings', {
+            method: 'HEAD',
+            headers: { 'x-admin-password': pw },
           });
-          if (probeRes.status === 401) {
+          if (res.status === 401) {
             showStatus(gateStatus, 'Passwort ist falsch', 'err');
             return;
           }
-          if (!probeRes.ok) throw new Error('Server-Fehler');
-
+          if (!res.ok) {
+            showStatus(gateStatus, 'Server-Fehler (' + res.status + ')', 'err');
+            return;
+          }
           password = pw;
           sessionStorage.setItem('adminPw', pw);
           gate.style.display = 'none';
           admin.style.display = 'block';
-          currentSettings = current;
-          coupleEl.value = current.coupleNames || '';
-          welcomeEl.value = current.welcomeText || '';
-          setPhoto(current.couplePhotoUrl);
+          await loadCurrent();
         } catch (e) {
           showStatus(gateStatus, 'Server nicht erreichbar', 'err');
         }
@@ -379,7 +367,7 @@
         if (e.key === 'Enter') enterAdmin();
       });
 
-      // ---- Brautpaar-Bild hochladen ----
+      // ---- Brautpaar-Bild hochladen (speichert sofort die neue URL mit allen aktuellen Texten) ----
       photoInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -418,11 +406,11 @@
             xhr.send(fd);
           });
 
-          // Cache-Buster anhängen, damit das alte Bild nicht angezeigt wird
           const urlWithBust = uploadRes.secure_url + '?v=' + Date.now();
           setPhoto(urlWithBust);
 
-          // Settings gleich speichern (nur das Foto-Feld aktualisieren)
+          // Sofort speichern, aber mit den AKTUELLEN Werten aus den Feldern,
+          // damit keine Texte überschrieben werden, die gerade im Formular stehen.
           await saveSettings(true);
           showStatus(saveStatus, 'Brautpaar-Bild aktualisiert', 'ok');
         } catch (err) {
@@ -441,12 +429,12 @@
         showStatus(saveStatus, 'Brautpaar-Bild entfernt', 'ok');
       });
 
-      // ---- Texte speichern ----
+      // ---- Alles speichern: liest die aktuellen Feld-Werte und die aktuelle Bild-URL ----
       async function saveSettings(silent) {
         const body = {
           coupleNames: coupleEl.value.trim(),
           welcomeText: welcomeEl.value.trim(),
-          couplePhotoUrl: currentSettings.couplePhotoUrl || '',
+          couplePhotoUrl: currentPhotoUrl || '',
         };
         try {
           const res = await fetch('/api/settings', {
@@ -454,9 +442,7 @@
             headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
             body: JSON.stringify(body),
           });
-          if (!res.ok) throw new Error('Speichern fehlgeschlagen');
-          const data = await res.json();
-          currentSettings = data.settings || body;
+          if (!res.ok) throw new Error('Speichern fehlgeschlagen (' + res.status + ')');
           if (!silent) showStatus(saveStatus, 'Gespeichert', 'ok');
         } catch (err) {
           showStatus(saveStatus, 'Fehler: ' + err.message, 'err');
