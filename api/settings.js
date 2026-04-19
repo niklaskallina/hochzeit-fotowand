@@ -39,6 +39,15 @@ module.exports = async (req, res) => {
       return res.status(200).json(settings);
     }
 
+    // HEAD: reine Passwort-Prüfung ohne Datenänderung
+    if (req.method === 'HEAD') {
+      const adminPw = process.env.ADMIN_PASSWORD;
+      if (adminPw && req.headers['x-admin-password'] !== adminPw) {
+        return res.status(401).end();
+      }
+      return res.status(200).end();
+    }
+
     if (req.method === 'POST') {
       // Schutz per einfachem Admin-Passwort (in ENV)
       const adminPw = process.env.ADMIN_PASSWORD;
