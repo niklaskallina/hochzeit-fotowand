@@ -50,64 +50,64 @@
         position: absolute;
         inset: 0;
         display: grid;
-        place-items: center;
+        grid-template-rows: 1fr auto;
         opacity: 0;
         transition: opacity 1.2s ease-in-out;
-        padding: 4vh 4vw;
+        padding: 3vh 3vw 0;
       }
       .slide.active {
         opacity: 1;
       }
+      .slide-img-wrap {
+        display: grid;
+        place-items: center;
+        min-height: 0; /* wichtig: erlaubt dem Bild, zu schrumpfen */
+        overflow: hidden;
+      }
       .slide img {
         max-width: 100%;
         max-height: 100%;
+        width: auto;
+        height: auto;
         object-fit: contain;
         border-radius: 6px;
         box-shadow:
           0 30px 80px -30px rgba(0, 0, 0, 0.7),
           0 0 0 1px rgba(255, 255, 255, 0.04);
-        transform: scale(1);
-        transition: transform 8s ease-out;
-      }
-      .slide.active img {
-        transform: scale(1.04);
       }
       .caption {
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        padding: 4vh 6vw;
-        background: linear-gradient(
-          to top,
-          rgba(0, 0, 0, 0.75) 0%,
-          rgba(0, 0, 0, 0.4) 50%,
-          transparent 100%
-        );
-        transform: translateY(20px);
+        padding: 2vh 4vw 3vh;
+        text-align: center;
+        transform: translateY(15px);
         opacity: 0;
         transition: opacity 0.8s 0.3s, transform 0.8s 0.3s;
         pointer-events: none;
+        min-height: 0;
       }
       .slide.active .caption {
         opacity: 1;
         transform: translateY(0);
       }
+      .caption:empty,
+      .caption.hidden {
+        display: none;
+      }
       .caption-inner {
         max-width: 900px;
+        margin: 0 auto;
       }
       .caption .from {
         font-family: 'Cormorant Garamond', serif;
         font-style: italic;
-        font-size: clamp(16px, 2vw, 22px);
+        font-size: clamp(13px, 1.4vw, 18px);
         color: var(--accent);
         letter-spacing: 0.1em;
         text-transform: uppercase;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
       }
       .caption .msg {
         font-family: 'Cormorant Garamond', serif;
-        font-size: clamp(22px, 3.5vw, 44px);
+        font-size: clamp(18px, 2.4vw, 30px);
         font-weight: 400;
         line-height: 1.25;
         color: var(--ink);
@@ -276,7 +276,7 @@
   <body>
     <div class="stage" id="stage">
       <div class="slide" id="slide-a">
-        <img alt="" />
+        <div class="slide-img-wrap"><img alt="" /></div>
         <div class="caption">
           <div class="caption-inner">
             <div class="from"></div>
@@ -285,7 +285,7 @@
         </div>
       </div>
       <div class="slide" id="slide-b">
-        <img alt="" />
+        <div class="slide-img-wrap"><img alt="" /></div>
         <div class="caption">
           <div class="caption-inner">
             <div class="from"></div>
@@ -478,9 +478,9 @@
         if (settings.captions && (img.name || img.message)) {
           fromEl.textContent = img.name ? 'von ' + img.name : '';
           msgEl.textContent = img.message || '';
-          next.querySelector('.caption').style.display = '';
+          next.querySelector('.caption').classList.remove('hidden');
         } else {
-          next.querySelector('.caption').style.display = 'none';
+          next.querySelector('.caption').classList.add('hidden');
         }
       }
 
