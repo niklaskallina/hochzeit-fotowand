@@ -430,17 +430,42 @@
       });
 
       // ---- Alles speichern: liest die aktuellen Feld-Werte und die aktuelle Bild-URL ----
+      // Wichtig: Bei silent-saves (nach Bild-Upload) werden leere Texte NICHT
+      // über bereits vorhandene geschrieben — nur was im Formular aktuell steht.
+      // Bei nicht-silent (= User klickt "Alles speichern") werden leere Werte
+      // absichtlich übernommen, damit der User Texte auch löschen kann.
       async function saveSettings(silent) {
-        const body = {
+        const formBody = {
           coupleNames: coupleEl.value.trim(),
           welcomeText: welcomeEl.value.trim(),
           couplePhotoUrl: currentPhotoUrl || '',
         };
+
+        let bodyToSend = formBody;
+
+        if (silent) {
+          // Beim stillen Speichern (z.B. nach Bild-Upload) holen wir erst die
+          // aktuell gespeicherten Settings und merchen das, was im Formular fehlt.
+          try {
+            const cur = await fetch('/api/settings', { cache: 'no-store' });
+            if (cur.ok) {
+              const curData = await cur.json();
+              bodyToSend = {
+                coupleNames: formBody.coupleNames || curData.coupleNames || '',
+                welcomeText: formBody.welcomeText || curData.welcomeText || '',
+                couplePhotoUrl: formBody.couplePhotoUrl || curData.couplePhotoUrl || '',
+              };
+            }
+          } catch (e) {
+            // Merge-Fetch fehlgeschlagen → trotzdem speichern
+          }
+        }
+
         try {
           const res = await fetch('/api/settings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
-            body: JSON.stringify(body),
+            body: JSON.stringify(bodyToSend),
           });
           if (!res.ok) throw new Error('Speichern fehlgeschlagen (' + res.status + ')');
           if (!silent) showStatus(saveStatus, 'Gespeichert', 'ok');
