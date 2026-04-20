@@ -49,8 +49,8 @@
       .slide {
         position: absolute;
         inset: 0;
-        display: grid;
-        grid-template-rows: 1fr auto;
+        display: flex;
+        flex-direction: column;
         opacity: 0;
         transition: opacity 1.2s ease-in-out;
         padding: 3vh 3vw 0;
@@ -59,10 +59,11 @@
         opacity: 1;
       }
       .slide-img-wrap {
-        display: grid;
-        place-items: center;
-        min-height: 0; /* wichtig: erlaubt dem Bild, zu schrumpfen */
-        overflow: hidden;
+        flex: 1 1 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 0; /* wichtig für flex: erlaubt dem Bild, zu schrumpfen */
       }
       .slide img {
         max-width: 100%;
@@ -76,13 +77,13 @@
           0 0 0 1px rgba(255, 255, 255, 0.04);
       }
       .caption {
+        flex: 0 0 auto;
         padding: 2vh 4vw 3vh;
         text-align: center;
         transform: translateY(15px);
         opacity: 0;
         transition: opacity 0.8s 0.3s, transform 0.8s 0.3s;
         pointer-events: none;
-        min-height: 0;
       }
       .slide.active .caption {
         opacity: 1;
