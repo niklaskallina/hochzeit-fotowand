@@ -421,7 +421,7 @@
         <div class="small" id="success-small">Euer Foto erscheint gleich auf der Fotowand.</div>
         <button class="ghost-btn" id="again">Noch eins hochladen</button>
         <div style="margin-top: 14px; font-size: 12px; color: var(--ink-soft);">
-          <a href="/stats" style="color: var(--accent-deep); text-decoration: none;">Statistik ansehen ›</a>
+          <a id="statsLink" href="#" style="color: var(--accent-deep); text-decoration: none;">Statistik ansehen ›</a>
         </div>
       </div>
     </div>
@@ -429,6 +429,18 @@
     <div class="hearts-burst" id="heartsBurst" aria-hidden="true"></div>
 
     <script>
+      // ---------- Slug aus Pfad /e/<slug> ----------
+      const SLUG = ((location.pathname.match(/\/e\/([^\/?#]+)/) || [])[1] || '').toLowerCase();
+      if (!SLUG) {
+        document.body.innerHTML =
+          '<div style="padding:60px 20px;text-align:center;font-family:serif;color:#5e4826">' +
+          '<h2 style="font-style:italic">Event nicht gefunden</h2>' +
+          '<p>Bitte scannt den QR-Code eurer Hochzeit erneut.</p></div>';
+        throw new Error('Kein Slug in URL');
+      }
+      const statsLink = document.getElementById('statsLink');
+      if (statsLink) statsLink.href = '/e/' + SLUG + '/stats';
+
       // ---------- Foto-Challenges: wechseln bei Klick auf ↻ ----------
       const CHALLENGES = [
         { e: '💃', t: 'Fotografiert die erste Tanz-Einlage — egal ob elegant oder peinlich.' },
@@ -648,31 +660,42 @@
       // ---------- Event-Einstellungen laden ----------
       (async function loadEventSettings() {
         try {
-          const res = await fetch('/api/settings', { cache: 'no-store' });
-          if (!res.ok) return;
-          const s = await res.json();
+          const res = await fetch('/api/events/by-slug?slug=' + encodeURIComponent(SLUG), {
+            cache: 'no-store',
+          });
+          if (!res.ok) {
+            if (res.status === 404 || res.status === 403) {
+              document.body.innerHTML =
+                '<div style="padding:60px 20px;text-align:center;font-family:serif;color:#5e4826">' +
+                '<h2 style="font-style:italic">Event nicht verfügbar</h2>' +
+                '<p>Dieses Event ist nicht aktiv oder wurde nicht gefunden.</p></div>';
+            }
+            return;
+          }
+          const body = await res.json();
+          const s = body.event || body;
 
-          if (s.couplePhotoUrl) {
+          if (s.couple_photo_url) {
             const img = document.getElementById('couplePhoto');
-            img.src = s.couplePhotoUrl;
+            img.src = s.couple_photo_url;
             img.onload = () => {
               document.getElementById('couplePlaceholder').style.display = 'none';
               img.style.display = '';
             };
           }
 
-          if (s.coupleNames && s.coupleNames.trim()) {
-            document.getElementById('coupleNames').textContent = s.coupleNames;
+          if (s.couple_names && s.couple_names.trim()) {
+            document.getElementById('coupleNames').textContent = s.couple_names;
             document.getElementById('ornament').textContent = 'mit Liebe geteilt';
+            document.title = s.couple_names + ' · Foto hochladen';
           }
 
-          if (s.welcomeText && s.welcomeText.trim()) {
+          if (s.welcome_text && s.welcome_text.trim()) {
             const w = document.getElementById('welcome');
-            w.textContent = s.welcomeText;
+            w.textContent = s.welcome_text;
             w.classList.remove('default');
           }
         } catch (e) {
-          // Falls Einstellungen nicht erreichbar → Defaults anzeigen
           console.warn('Event-Einstellungen nicht ladbar', e);
         }
       })();
@@ -782,10 +805,11 @@
         barEl.style.width = '0%';
 
         try {
-          const sigRes = await fetch('/api/sign-upload', {
+          const sigRes = await fetch('/api/events/sign-upload', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              slug: SLUG,
               name: nameEl.value.trim(),
               message: msgEl.value.trim(),
               mode: 'guest',

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Anmeldung läuft…</title>
+    <style>
+      html, body {
+        margin: 0; padding: 0;
+        background: #f6f1e8; color: #2a2623;
+        font-family: system-ui, sans-serif;
+        min-height: 100vh;
+        display: grid; place-items: center;
+      }
+      .box { text-align: center; padding: 30px; }
+      .spin {
+        width: 32px; height: 32px;
+        border: 3px solid #d9cfbd;
+        border-top-color: #5e4826;
+        border-radius: 50%;
+        animation: rot 0.8s linear infinite;
+        margin: 0 auto 16px;
+      }
+      @keyframes rot { to { transform: rotate(360deg); } }
+      .err { color: #a33a3a; }
+      a { color: #5e4826; }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <div class="spin"></div>
+      <div id="msg">Anmeldung wird abgeschlossen…</div>
+    </div>
+    <script>
+      (function () {
+        // Supabase liefert Token im URL-Fragment (#access_token=...&refresh_token=...)
+        const params = new URLSearchParams(location.hash.startsWith('#') ? location.hash.slice(1) : location.hash);
+        const access = params.get('access_token');
+        const refresh = params.get('refresh_token');
+        const expires = params.get('expires_in');
+        const err = params.get('error_description') || params.get('error');
+        const msg = document.getElementById('msg');
+        if (err) {
+          msg.innerHTML = '<div class="err">Anmeldung fehlgeschlagen: ' + err + '</div><br /><a href="/login">Erneut versuchen</a>';
+          return;
+        }
+        if (!access) {
+          msg.innerHTML = '<div class="err">Kein Login-Token gefunden.</div><br /><a href="/login">Erneut versuchen</a>';
+          return;
+        }
+        // Token in Cookie ablegen, damit die API-Endpunkte ihn lesen können
+        const maxAge = parseInt(expires || '3600', 10);
+        document.cookie = 'sb-access-token=' + access + '; Path=/; Max-Age=' + maxAge + '; SameSite=Lax' + (location.protocol === 'https:' ? '; Secure' : '');
+        if (refresh) {
+          try { localStorage.setItem('sb-refresh-token', refresh); } catch (e) {}
+        }
+        try { localStorage.setItem('sb-access-token', access); } catch (e) {}
+        // Weiterleiten
+        const next = new URLSearchParams(location.search).get('next') || '/dashboard';
+        location.replace(next);
+      })();
+    </script>
+  </body>
+</html>

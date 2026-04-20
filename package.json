@@ -1,8 +1,10 @@
 {
   "name": "hochzeit-fotowand",
-  "version": "1.0.0",
-  "description": "Live-Fotowand für Hochzeit mit Cloudinary",
+  "version": "2.0.0",
+  "description": "Live-Fotowand für Hochzeiten — Multi-Mandanten-SaaS",
   "dependencies": {
-    "cloudinary": "^2.5.1"
+    "cloudinary": "^2.5.1",
+    "@supabase/supabase-js": "^2.45.0",
+    "resend": "^4.0.0"
   }
 }

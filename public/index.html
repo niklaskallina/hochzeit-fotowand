@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Momentwand — Eure Live-Fotowand für die Hochzeit</title>
+    <meta
+      name="description"
+      content="Momentwand verwandelt die Fotos eurer Gäste in eine Live-Slideshow. QR-Code scannen, Fotos teilen, sofort auf der Leinwand erscheinen — ohne App, ohne Gäste-Registrierung."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f6f1e8;
+        --bg-2: #efe6d4;
+        --ink: #2a2623;
+        --ink-soft: #6b625b;
+        --accent: #8a6a3b;
+        --accent-deep: #5e4826;
+        --gold: #c4a26a;
+        --heart: #c6475d;
+        --line: #d9cfbd;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0; padding: 0;
+        background: var(--bg); color: var(--ink);
+        font-family: 'Inter', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        scroll-behavior: smooth;
+      }
+
+      .nav {
+        position: sticky; top: 0; z-index: 20;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 16px 28px;
+        background: rgba(246, 241, 232, 0.85);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--line);
+      }
+      .brand {
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic;
+        font-size: 24px;
+        color: var(--accent-deep);
+        letter-spacing: 0.02em;
+      }
+      .nav-links { display: flex; align-items: center; gap: 22px; font-size: 14px; }
+      .nav-links a { color: var(--ink); text-decoration: none; }
+      .nav-links a:hover { color: var(--accent-deep); }
+      .nav-links .cta {
+        padding: 9px 18px;
+        background: var(--accent-deep);
+        color: #fdfaf4;
+        border-radius: 999px;
+        font-weight: 500;
+      }
+      .nav-links .cta:hover { background: #4a3820; color: #fdfaf4; }
+
+      .hero {
+        text-align: center;
+        padding: 80px 24px 60px;
+        background-image:
+          radial-gradient(ellipse at top, rgba(255, 250, 240, 0.8), transparent 60%),
+          radial-gradient(ellipse at 80% 20%, rgba(196, 162, 106, 0.12), transparent 60%);
+      }
+      .eyebrow {
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic;
+        color: var(--accent);
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        font-size: 13px;
+        margin-bottom: 20px;
+      }
+      .eyebrow::before, .eyebrow::after { content: '·'; margin: 0 12px; opacity: 0.7; }
+      .hero h1 {
+        font-family: 'Cormorant Garamond', serif;
+        font-weight: 500;
+        font-size: clamp(42px, 7vw, 76px);
+        line-height: 1.05;
+        margin: 0 0 18px;
+        letter-spacing: -0.005em;
+      }
+      .hero h1 .em { font-style: italic; color: var(--accent-deep); }
+      .hero .lede {
+        max-width: 620px;
+        margin: 0 auto 30px;
+        font-size: clamp(17px, 2vw, 20px);
+        line-height: 1.55;
+        color: var(--ink-soft);
+      }
+      .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+      .btn {
+        display: inline-block;
+        padding: 14px 28px;
+        border-radius: 999px;
+        font-family: inherit;
+        font-weight: 500;
+        font-size: 15px;
+        cursor: pointer;
+        text-decoration: none;
+        border: 1px solid transparent;
+        transition: transform 0.08s, background 0.15s;
+      }
+      .btn:active { transform: scale(0.98); }
+      .btn.primary { background: var(--accent-deep); color: #fdfaf4; }
+      .btn.primary:hover { background: #4a3820; }
+      .btn.ghost { background: transparent; border-color: var(--line); color: var(--ink); }
+      .btn.ghost:hover { background: var(--bg-2); }
+
+      .hero-visual {
+        max-width: 880px;
+        margin: 50px auto 0;
+        aspect-ratio: 16/9;
+        background:
+          linear-gradient(135deg, #1a1510, #2a2015),
+          radial-gradient(ellipse at center, rgba(196, 162, 106, 0.2), transparent 70%);
+        border-radius: 18px;
+        box-shadow: 0 40px 80px -30px rgba(94, 72, 38, 0.45);
+        display: grid;
+        place-items: center;
+        position: relative;
+        overflow: hidden;
+      }
+      .hero-visual::before {
+        content: '';
+        position: absolute; inset: 0;
+        background: radial-gradient(ellipse at center, rgba(198, 71, 93, 0.2), transparent 60%);
+      }
+      .hero-visual .fake {
+        position: relative; z-index: 2;
+        font-family: 'Cormorant Garamond', serif;
+        font-size: clamp(40px, 6vw, 76px);
+        color: #f4ebd9;
+        text-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        font-style: italic;
+      }
+      .hero-visual .fake small {
+        display: block;
+        font-family: 'Inter', sans-serif;
+        font-style: normal;
+        font-size: clamp(12px, 1.6vw, 15px);
+        color: var(--gold);
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        margin-top: 14px;
+        font-weight: 400;
+      }
+      .floating-heart {
+        position: absolute;
+        color: #c6475d;
+        font-size: 34px;
+        animation: float 7s linear infinite;
+        opacity: 0;
+      }
+      @keyframes float {
+        0% { transform: translateY(30px) scale(0.6); opacity: 0; }
+        15% { opacity: 0.9; }
+        100% { transform: translateY(-400px) translateX(var(--dx, 40px)) scale(1.1); opacity: 0; }
+      }
+
+      section { padding: 70px 24px; }
+      .sec-inner { max-width: 960px; margin: 0 auto; }
+      .sec-title {
+        font-family: 'Cormorant Garamond', serif;
+        font-weight: 500;
+        font-size: clamp(30px, 4.5vw, 42px);
+        margin: 0 0 10px;
+        text-align: center;
+      }
+      .sec-sub { text-align: center; color: var(--ink-soft); max-width: 620px; margin: 0 auto 40px; font-size: 16px; line-height: 1.6; }
+
+      .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 20px;
+      }
+      .feature {
+        background: #fdfaf4;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 24px;
+      }
+      .feature .ic {
+        font-size: 28px;
+        margin-bottom: 10px;
+      }
+      .feature h3 { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 22px; margin: 0 0 6px; }
+      .feature p { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 0; }
+
+      /* How it works */
+      .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 22px; }
+      .step { text-align: center; padding: 0 10px; }
+      .step .num {
+        display: inline-grid; place-items: center;
+        width: 44px; height: 44px; border-radius: 50%;
+        background: var(--accent-deep); color: #fdfaf4;
+        font-family: 'Cormorant Garamond', serif; font-size: 22px;
+        margin-bottom: 14px;
+      }
+      .step h3 { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 22px; margin: 0 0 6px; }
+      .step p { font-size: 14px; color: var(--ink-soft); line-height: 1.55; margin: 0; }
+
+      /* Pricing */
+      .pricing { background: #fdfaf4; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+      .plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+      .plan {
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 28px 24px;
+        position: relative;
+      }
+      .plan.best { border-color: var(--accent); box-shadow: 0 20px 40px -20px rgba(138, 106, 59, 0.25); }
+      .plan.best::before {
+        content: 'beliebt';
+        position: absolute; top: -12px; right: 20px;
+        background: var(--accent-deep); color: #fdfaf4;
+        font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+        padding: 4px 12px; border-radius: 999px;
+      }
+      .plan h3 { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 26px; margin: 0 0 4px; }
+      .plan .price { font-family: 'Cormorant Garamond', serif; font-size: 44px; color: var(--accent-deep); margin: 8px 0; }
+      .plan .price small { font-size: 15px; color: var(--ink-soft); font-family: 'Inter', sans-serif; }
+      .plan ul { list-style: none; padding: 0; margin: 18px 0; }
+      .plan ul li { padding: 6px 0; font-size: 14px; color: var(--ink-soft); border-bottom: 1px solid var(--line); }
+      .plan ul li:last-child { border-bottom: none; }
+      .plan ul li::before { content: '✓ '; color: var(--accent); font-weight: 600; margin-right: 4px; }
+      .plan .btn { width: 100%; text-align: center; }
+
+      /* FAQ */
+      .faq details {
+        background: #fdfaf4;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 10px;
+      }
+      .faq details[open] { border-color: var(--accent); }
+      .faq summary {
+        cursor: pointer;
+        font-family: 'Cormorant Garamond', serif;
+        font-weight: 500;
+        font-size: 19px;
+        list-style: none;
+      }
+      .faq summary::after { content: '+'; float: right; color: var(--accent); font-size: 22px; line-height: 1; }
+      .faq details[open] summary::after { content: '–'; }
+      .faq p { color: var(--ink-soft); line-height: 1.6; font-size: 14px; margin-top: 10px; }
+
+      .finale {
+        text-align: center;
+        padding: 80px 24px;
+        background:
+          radial-gradient(ellipse at center, rgba(198, 71, 93, 0.08), transparent 60%);
+      }
+
+      footer {
+        padding: 40px 24px 30px;
+        border-top: 1px solid var(--line);
+        text-align: center;
+        color: var(--ink-soft);
+        font-size: 13px;
+      }
+      footer a { color: var(--accent-deep); margin: 0 10px; text-decoration: none; }
+      footer .brand-foot {
+        font-family: 'Cormorant Garamond', serif; font-style: italic;
+        font-size: 18px; color: var(--accent-deep); margin-bottom: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="nav">
+      <div class="brand">Momentwand</div>
+      <div class="nav-links">
+        <a href="#pricing">Preise</a>
+        <a href="#faq">FAQ</a>
+        <a href="/login" class="cta">Login</a>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <div class="eyebrow">Die Live-Fotowand für eure Hochzeit</div>
+      <h1>Eure Gäste werden <span class="em">zu Fotograf:innen</span></h1>
+      <p class="lede">
+        Ein QR-Code auf jedem Tisch — jedes Foto erscheint sofort auf eurer Leinwand.
+        Keine App, keine Registrierung, kein Kabelsalat. Nur echte Momente, live geteilt.
+      </p>
+      <div class="hero-cta">
+        <a href="#pricing" class="btn primary">Event buchen</a>
+        <a href="/login" class="btn ghost">Einloggen</a>
+      </div>
+
+      <div class="hero-visual" id="heroVisual">
+        <div class="fake">Anna &amp; Tom<small>live · 148 Fotos · 63 Gäste</small></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-inner">
+        <h2 class="sec-title">Was macht Momentwand besonders</h2>
+        <p class="sec-sub">
+          Keine App-Installation, keine Einladungen verteilen, keine Cloud-Accounts für die Gäste.
+          Ihr seid in unter zehn Minuten startklar.
+        </p>
+        <div class="features">
+          <div class="feature">
+            <div class="ic">📱</div>
+            <h3>Scan &amp; Upload</h3>
+            <p>Gäste scannen den QR-Code am Tisch und laden Fotos aus dem Browser hoch. Keine App nötig.</p>
+          </div>
+          <div class="feature">
+            <div class="ic">✨</div>
+            <h3>Live-Slideshow</h3>
+            <p>Neue Fotos erscheinen nach Sekunden auf eurer Leinwand — mit Namen, Grüßen und Herz-Animationen.</p>
+          </div>
+          <div class="feature">
+            <div class="ic">📊</div>
+            <h3>Statistiken</h3>
+            <p>Wer hat die meisten Fotos geteilt? Welche Stunde war die aktivste? Alles live in eurer Event-Statistik.</p>
+          </div>
+          <div class="feature">
+            <div class="ic">💌</div>
+            <h3>Gruß-Wand</h3>
+            <p>Gäste können zu jedem Foto eine Botschaft ans Brautpaar schreiben — sie erscheint in der Statistik.</p>
+          </div>
+          <div class="feature">
+            <div class="ic">🎯</div>
+            <h3>Foto-Challenges</h3>
+            <p>Zwanzig spielerische Foto-Ideen motivieren eure Gäste — vom ersten Tanz bis zum schönsten Paar-Moment.</p>
+          </div>
+          <div class="feature">
+            <div class="ic">🔒</div>
+            <h3>Eure Daten, euer Event</h3>
+            <p>DSGVO-konform in der EU gehostet. Nach dem Event könnt ihr alle Fotos als ZIP herunterladen.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="background: var(--bg-2)">
+      <div class="sec-inner">
+        <h2 class="sec-title">So einfach funktioniert's</h2>
+        <p class="sec-sub">Von der Buchung bis zur Slideshow — kein technisches Vorwissen nötig.</p>
+        <div class="steps">
+          <div class="step">
+            <div class="num">1</div>
+            <h3>Event buchen</h3>
+            <p>Plan wählen, bezahlen, Login-Link erhalten. Alles per E-Mail, ohne Account-Stress.</p>
+          </div>
+          <div class="step">
+            <div class="num">2</div>
+            <h3>Einrichten</h3>
+            <p>Im Dashboard Brautpaar-Foto &amp; Begrüßungstext einstellen, QR-Code herunterladen und drucken.</p>
+          </div>
+          <div class="step">
+            <div class="num">3</div>
+            <h3>Am Hochzeitstag</h3>
+            <p>Slideshow auf Laptop/Beamer öffnen, Vollbild — und los geht's. Wir kümmern uns um den Rest.</p>
+          </div>
+          <div class="step">
+            <div class="num">4</div>
+            <h3>Danach</h3>
+            <p>Alle Fotos als ZIP herunterladen. Statistik und Grüße bleiben noch Monate online.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="pricing" id="pricing">
+      <div class="sec-inner">
+        <h2 class="sec-title">Ein fairer Preis — einmal pro Event</h2>
+        <p class="sec-sub">
+          Keine Abos, keine versteckten Kosten. Zahlt einmalig und habt alles inklusive — auch den Support.
+        </p>
+        <div class="plans">
+          <div class="plan">
+            <h3>Basic</h3>
+            <div class="price">29 €<small> / Event</small></div>
+            <p style="color: var(--ink-soft); font-size: 14px;">Für kleine Hochzeiten &amp; Feiern bis 50 Gäste.</p>
+            <ul>
+              <li>Unbegrenzte Fotos</li>
+              <li>Live-Slideshow &amp; Statistik</li>
+              <li>QR-Code-Generator</li>
+              <li>Downloads als ZIP</li>
+              <li>30 Tage Zugang</li>
+            </ul>
+            <a href="/login" class="btn ghost">Starten</a>
+          </div>
+          <div class="plan best">
+            <h3>Plus</h3>
+            <div class="price">59 €<small> / Event</small></div>
+            <p style="color: var(--ink-soft); font-size: 14px;">Die Empfehlung für klassische Hochzeiten.</p>
+            <ul>
+              <li>Alles aus <b>Basic</b></li>
+              <li>Foto-Challenges &amp; Gruß-Wand</li>
+              <li>Meilenstein-Animationen</li>
+              <li>6 Monate Zugang</li>
+              <li>Prioritäts-Support per E-Mail</li>
+            </ul>
+            <a href="/login" class="btn primary">Plus buchen</a>
+          </div>
+          <div class="plan">
+            <h3>Premium</h3>
+            <div class="price">99 €<small> / Event</small></div>
+            <p style="color: var(--ink-soft); font-size: 14px;">Für große Events, Unternehmensfeiern &amp; mehrere Tage.</p>
+            <ul>
+              <li>Alles aus <b>Plus</b></li>
+              <li>2 Jahre Zugang</li>
+              <li>Eigenes Branding (Logo, Farben)</li>
+              <li>Persönliches Onboarding (Call)</li>
+              <li>Premium-Support</li>
+            </ul>
+            <a href="/login" class="btn ghost">Premium buchen</a>
+          </div>
+        </div>
+        <p style="text-align:center; font-size: 12px; color: var(--ink-soft); margin-top: 30px;">
+          Alle Preise inkl. MwSt. · Zahlung per PayPal oder manuell (Überweisung auf Anfrage).<br />
+          Nach Zahlung erhaltet ihr sofort einen Login-Link per E-Mail.
+        </p>
+      </div>
+    </section>
+
+    <section id="faq">
+      <div class="sec-inner">
+        <h2 class="sec-title">Häufige Fragen</h2>
+        <div class="faq" style="max-width: 720px; margin: 0 auto;">
+          <details>
+            <summary>Müssen meine Gäste eine App installieren?</summary>
+            <p>Nein. Gäste scannen den QR-Code, öffnen die Upload-Seite im Browser und wählen Fotos aus — das war's. Funktioniert auf jedem modernen Smartphone.</p>
+          </details>
+          <details>
+            <summary>Wie schnell erscheinen die Fotos auf der Leinwand?</summary>
+            <p>Die Slideshow fragt alle 8 Sekunden nach neuen Fotos und spielt sie als Nächstes. Vom Scan bis zur Leinwand vergehen typischerweise 10–20 Sekunden.</p>
+          </details>
+          <details>
+            <summary>Was passiert mit den Fotos nach der Hochzeit?</summary>
+            <p>Ihr behaltet Zugriff je nach Plan (30 Tage bis 2 Jahre) und könnt jederzeit alle Fotos als ZIP herunterladen. Danach werden die Daten DSGVO-konform gelöscht — oder wir verlängern auf Wunsch.</p>
+          </details>
+          <details>
+            <summary>Was brauche ich technisch für die Slideshow?</summary>
+            <p>Einen Laptop oder PC mit Internet und einem Browser, sowie ein HDMI-Kabel oder eine Beamer-Verbindung. Mehr nicht.</p>
+          </details>
+          <details>
+            <summary>Wie wird bezahlt?</summary>
+            <p>Per PayPal direkt nach der Buchung. Alternativ bieten wir auf Anfrage auch Rechnungs- oder Überweisungszahlung an — schreibt uns einfach.</p>
+          </details>
+          <details>
+            <summary>Kann ich die Seite mit unserem Brautpaar-Foto anpassen?</summary>
+            <p>Ja. Im Kundenportal ladet ihr euer Brautpaar-Foto hoch und schreibt den Begrüßungstext — beides erscheint oben auf der Upload-Seite.</p>
+          </details>
+          <details>
+            <summary>Ist das DSGVO-konform?</summary>
+            <p>Ja. Hosting in der EU (Vercel), Bilder bei Cloudinary (Datenverarbeitung gemäß DSGVO-konformer AVV), Authentifizierung via Supabase. Wir stellen euch auf Wunsch einen Auftragsverarbeitungsvertrag zur Verfügung.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="finale">
+      <div class="sec-inner" style="max-width: 680px;">
+        <h2 class="sec-title">Bereit für eure Live-Fotowand?</h2>
+        <p class="sec-sub">
+          In weniger als 10 Minuten steht euer Event. Wir begleiten euch bis zum Hochzeitstag.
+        </p>
+        <a href="/login" class="btn primary" style="font-size: 17px; padding: 16px 34px;">Jetzt starten</a>
+      </div>
+    </section>
+
+    <footer>
+      <div class="brand-foot">Momentwand</div>
+      <div>
+        <a href="/impressum">Impressum</a>·
+        <a href="/datenschutz">Datenschutz</a>·
+        <a href="/agb">AGB</a>·
+        <a href="/widerruf">Widerruf</a>
+      </div>
+      <div style="margin-top: 12px; font-size: 11px;">© <span id="year"></span> Momentwand. Mit Liebe gebaut.</div>
+    </footer>
+
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+      // Floating hearts
+      const hv = document.getElementById('heroVisual');
+      function spawn() {
+        const h = document.createElement('span');
+        h.className = 'floating-heart';
+        h.textContent = '♥';
+        h.style.left = Math.random() * 90 + '%';
+        h.style.bottom = '0';
+        h.style.setProperty('--dx', (Math.random() * 100 - 50) + 'px');
+        h.style.animationDuration = (5 + Math.random() * 4) + 's';
+        h.style.fontSize = (22 + Math.random() * 22) + 'px';
+        hv.appendChild(h);
+        setTimeout(() => h.remove(), 9000);
+      }
+      setInterval(spawn, 1200);
+      for (let i = 0; i < 4; i++) setTimeout(spawn, i * 400);
+    </script>
+  </body>
+</html>
