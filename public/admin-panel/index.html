@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin-Panel · Fotowand</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,400&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f6f1e8;
+        --bg-2: #efe6d4;
+        --ink: #2a2623;
+        --ink-soft: #6b625b;
+        --accent: #8a6a3b;
+        --accent-deep: #5e4826;
+        --line: #d9cfbd;
+        --ok: #4a7a4a;
+        --err: #a33a3a;
+        --warn: #a86a28;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: 'Inter', system-ui, sans-serif; }
+      .topbar {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 16px 28px; border-bottom: 1px solid var(--line);
+        background: rgba(253, 250, 244, 0.85); backdrop-filter: blur(10px);
+        position: sticky; top: 0; z-index: 10;
+      }
+      .brand { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 22px; color: var(--accent-deep); }
+      .userbar { font-size: 13px; color: var(--ink-soft); display: flex; align-items: center; gap: 14px; }
+      .userbar a { color: var(--accent-deep); text-decoration: none; }
+
+      .wrap { max-width: 1200px; margin: 0 auto; padding: 30px 24px 60px; }
+      h1 { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 34px; margin: 0 0 8px; }
+      .sub { color: var(--ink-soft); margin-bottom: 18px; }
+
+      table { width: 100%; border-collapse: collapse; background: #fdfaf4; border-radius: 10px; overflow: hidden; }
+      th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); font-size: 13px; vertical-align: middle; }
+      th { background: var(--bg-2); font-weight: 600; letter-spacing: 0.03em; font-size: 12px; text-transform: uppercase; color: var(--ink-soft); }
+      tr:last-child td { border-bottom: none; }
+      td.num { text-align: right; font-variant-numeric: tabular-nums; }
+      td .muted { color: var(--ink-soft); font-size: 12px; }
+      .slug-cell { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--accent-deep); }
+
+      .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; }
+      .badge.pending { background: rgba(168, 106, 40, 0.15); color: var(--warn); }
+      .badge.active { background: rgba(74, 122, 74, 0.15); color: var(--ok); }
+      .badge.expired { background: rgba(107, 98, 91, 0.15); color: var(--ink-soft); }
+      .badge.disabled { background: rgba(163, 58, 58, 0.12); color: var(--err); }
+
+      select, input[type='date'] {
+        background: #fffdf7; border: 1px solid var(--line); border-radius: 8px;
+        padding: 6px 8px; font-family: inherit; font-size: 13px; color: var(--ink);
+      }
+      .btn {
+        display: inline-block; padding: 6px 10px; border-radius: 8px;
+        font-size: 12px; font-family: inherit; cursor: pointer;
+        border: 1px solid var(--line); background: #fffdf7; color: var(--ink);
+      }
+      .btn.primary { background: var(--accent-deep); color: #fdfaf4; border-color: var(--accent-deep); }
+      .btn.primary:hover { background: #4a3820; }
+      .btn.danger { color: var(--err); border-color: rgba(163,58,58,0.3); }
+
+      .row-actions { display: flex; gap: 4px; flex-wrap: wrap; }
+
+      .loading { text-align: center; padding: 40px; color: var(--ink-soft); }
+      .spin { width: 26px; height: 26px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: rot 0.8s linear infinite; margin: 0 auto 10px; }
+      @keyframes rot { to { transform: rotate(360deg); } }
+
+      .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+      .stat { background: #fdfaf4; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+      .stat .num { font-family: 'Cormorant Garamond', serif; font-size: 32px; line-height: 1; color: var(--accent-deep); font-weight: 500; }
+      .stat .label { margin-top: 4px; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); }
+
+      @media (max-width: 720px) {
+        .hide-mobile { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="brand">Fotowand · Super-Admin</div>
+      <div class="userbar">
+        <a href="/dashboard">Mein Dashboard</a>
+        <span id="userEmail"></span>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <h1>Alle Events</h1>
+      <div class="sub">Manuelle Freischaltung, Plan- und Laufzeitverwaltung.</div>
+
+      <div class="stats-row" id="stats"></div>
+
+      <div id="loading" class="loading"><div class="spin"></div>Lade…</div>
+
+      <table id="tbl" style="display:none">
+        <thead>
+          <tr>
+            <th>Paar / Slug</th>
+            <th class="hide-mobile">Owner</th>
+            <th>Status</th>
+            <th>Plan</th>
+            <th class="hide-mobile">Läuft bis</th>
+            <th class="hide-mobile">Angelegt</th>
+            <th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <script>
+      function getAccessToken() {
+        try { const t = localStorage.getItem('sb-access-token'); if (t) return t; } catch (e) {}
+        const m = document.cookie.match(/(?:^|; )sb-access-token=([^;]+)/);
+        return m ? decodeURIComponent(m[1]) : null;
+      }
+      async function authedFetch(url, opts) {
+        const t = getAccessToken();
+        if (!t) { location.href = '/login?next=' + encodeURIComponent(location.pathname); throw new Error('not authed'); }
+        const o = opts || {};
+        o.headers = { ...(o.headers || {}), 'Authorization': 'Bearer ' + t };
+        return fetch(url, o);
+      }
+
+      const $ = (id) => document.getElementById(id);
+      const STATUS = ['pending', 'active', 'expired', 'disabled'];
+      const PLANS = ['basic', 'plus', 'premium'];
+
+      function fmtDate(d) {
+        if (!d) return '—';
+        try { return new Date(d).toLocaleDateString('de-DE'); } catch (e) { return d; }
+      }
+      function addYears(base, years) {
+        const d = new Date(base || Date.now());
+        d.setFullYear(d.getFullYear() + years);
+        return d.toISOString().slice(0, 10);
+      }
+
+      async function loadSession() {
+        try {
+          const res = await authedFetch('/api/auth/session');
+          const data = await res.json();
+          if (!data.user?.superAdmin) {
+            document.body.innerHTML = '<div style="padding:60px 20px;text-align:center;font-family:serif">Kein Zugriff. <a href="/dashboard">Zum Dashboard</a></div>';
+            throw new Error('no admin');
+          }
+          $('userEmail').textContent = data.user?.email || '';
+        } catch (e) { /* redirect already triggered */ }
+      }
+
+      async function load() {
+        const res = await authedFetch('/api/admin/events');
+        if (!res.ok) {
+          $('loading').innerHTML = 'Fehler beim Laden';
+          return;
+        }
+        const data = await res.json();
+        render(data.events || []);
+      }
+
+      function render(events) {
+        // KPIs
+        const by = { pending: 0, active: 0, expired: 0, disabled: 0 };
+        events.forEach((e) => { by[e.status] = (by[e.status] || 0) + 1; });
+        $('stats').innerHTML =
+          `<div class="stat"><div class="num">${events.length}</div><div class="label">Events gesamt</div></div>` +
+          `<div class="stat"><div class="num">${by.pending}</div><div class="label">Offen</div></div>` +
+          `<div class="stat"><div class="num">${by.active}</div><div class="label">Aktiv</div></div>` +
+          `<div class="stat"><div class="num">${by.expired + by.disabled}</div><div class="label">Abgelaufen / Deaktiviert</div></div>`;
+
+        const rows = $('rows');
+        rows.innerHTML = '';
+        events.forEach((ev) => rows.appendChild(row(ev)));
+        $('loading').style.display = 'none';
+        $('tbl').style.display = '';
+      }
+
+      function row(ev) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            <div>${escapeHtml(ev.couple_names || '(ohne Namen)')}</div>
+            <div class="slug-cell">/e/${escapeHtml(ev.slug)}</div>
+          </td>
+          <td class="hide-mobile"><div>${escapeHtml(ev.owner_email || '—')}</div><div class="muted">${ev.owner_id.slice(0, 8)}…</div></td>
+          <td><span class="badge ${ev.status}">${ev.status}</span></td>
+          <td>
+            <select data-field="plan">
+              ${PLANS.map((p) => `<option value="${p}" ${p === ev.plan ? 'selected' : ''}>${p}</option>`).join('')}
+            </select>
+          </td>
+          <td class="hide-mobile">
+            <input type="date" data-field="expires" value="${ev.expires_at ? ev.expires_at.slice(0,10) : ''}" />
+          </td>
+          <td class="hide-mobile">${fmtDate(ev.created_at)}</td>
+          <td>
+            <div class="row-actions">
+              ${ev.status !== 'active' ? '<button class="btn primary" data-act="activate">Freischalten</button>' : ''}
+              ${ev.status === 'active' ? '<button class="btn" data-act="disable">Deaktivieren</button>' : ''}
+              <button class="btn" data-act="savePlan">Plan speichern</button>
+              <button class="btn" data-act="saveExpires">Laufzeit speichern</button>
+            </div>
+          </td>`;
+        const planSel = tr.querySelector('[data-field="plan"]');
+        const expInput = tr.querySelector('[data-field="expires"]');
+
+        const actBtn = (name) => tr.querySelector(`[data-act="${name}"]`);
+        if (actBtn('activate')) {
+          actBtn('activate').onclick = async () => {
+            const plan = planSel.value;
+            const expiresSuggestion = ev.event_date ? addYears(ev.event_date, 2) : addYears(null, 1);
+            const confirmed = confirm(`Event „${ev.couple_names || ev.slug}" mit Plan „${plan}" freischalten?\n\nEs wird eine manuelle Order angelegt.`);
+            if (!confirmed) return;
+            await postAdmin({ id: ev.id, status: 'active', plan, expires_at: expiresSuggestion, note: 'Manuell freigeschaltet (Admin-Panel)' });
+            load();
+          };
+        }
+        if (actBtn('disable')) {
+          actBtn('disable').onclick = async () => {
+            if (!confirm(`Event „${ev.couple_names || ev.slug}" deaktivieren?`)) return;
+            await postAdmin({ id: ev.id, status: 'disabled' });
+            load();
+          };
+        }
+        actBtn('savePlan').onclick = async () => {
+          await postAdmin({ id: ev.id, plan: planSel.value });
+          load();
+        };
+        actBtn('saveExpires').onclick = async () => {
+          await postAdmin({ id: ev.id, expires_at: expInput.value || null });
+          load();
+        };
+        return tr;
+      }
+
+      async function postAdmin(body) {
+        const res = await authedFetch('/api/admin/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          alert('Fehler: ' + (d.error || res.status));
+        }
+      }
+
+      function escapeHtml(s) {
+        return String(s || '').replace(/[&<>"']/g, (c) =>
+          ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+      }
+
+      (async () => {
+        await loadSession();
+        await load();
+      })();
+    </script>
+  </body>
+</html>
