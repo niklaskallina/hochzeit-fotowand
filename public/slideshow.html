@@ -272,6 +272,116 @@
       body.show-cursor .counter {
         opacity: 1;
       }
+
+      /* ---- Live-Herzen beim Upload-Event ---- */
+      .live-hearts {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
+        z-index: 40;
+      }
+      .live-hearts .h {
+        position: absolute;
+        bottom: -60px;
+        color: #c6475d;
+        filter: drop-shadow(0 4px 16px rgba(198, 71, 93, 0.5));
+        animation: heart-float linear forwards;
+        opacity: 0;
+        font-size: 40px;
+        user-select: none;
+      }
+      @keyframes heart-float {
+        0% {
+          transform: translateY(0) translateX(0) scale(0.5);
+          opacity: 0;
+        }
+        8% { opacity: 1; }
+        60% {
+          transform: translateY(-55vh) translateX(var(--drift)) scale(1);
+        }
+        100% {
+          transform: translateY(-115vh) translateX(calc(var(--drift) * 1.5)) scale(1.2);
+          opacity: 0;
+        }
+      }
+
+      /* ---- Benachrichtigung über neuen Upload ---- */
+      .upload-toast {
+        position: fixed;
+        top: 40px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-120%);
+        background: rgba(20, 16, 12, 0.88);
+        backdrop-filter: blur(14px);
+        border: 1px solid rgba(196, 162, 106, 0.35);
+        border-radius: 999px;
+        padding: 14px 28px;
+        color: var(--ink);
+        font-size: 17px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        z-index: 45;
+        transition: transform 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+        box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.6);
+        white-space: nowrap;
+        max-width: 90vw;
+      }
+      .upload-toast.show { transform: translateX(-50%) translateY(0); }
+      .upload-toast .icon {
+        font-size: 22px;
+        color: #c6475d;
+      }
+      .upload-toast .label {
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic;
+        color: var(--accent);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-size: 12px;
+        margin-right: 4px;
+      }
+      .upload-toast b {
+        font-weight: 500;
+        color: var(--ink);
+      }
+
+      /* ---- Meilenstein-Feier (Vollbild) ---- */
+      .milestone {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: radial-gradient(ellipse at center, rgba(198, 71, 93, 0.18), rgba(14, 11, 8, 0) 70%);
+        z-index: 50;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.6s;
+      }
+      .milestone.show { opacity: 1; }
+      .milestone .mbox {
+        text-align: center;
+        transform: scale(0.8);
+        transition: transform 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+      }
+      .milestone.show .mbox { transform: scale(1); }
+      .milestone .mnum {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: clamp(100px, 20vw, 220px);
+        line-height: 1;
+        color: #fdfaf4;
+        text-shadow: 0 20px 60px rgba(198, 71, 93, 0.6);
+        font-weight: 500;
+      }
+      .milestone .mtxt {
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic;
+        font-size: clamp(22px, 3vw, 40px);
+        color: var(--accent);
+        letter-spacing: 0.1em;
+        margin-top: 10px;
+      }
     </style>
   </head>
   <body>
@@ -349,6 +459,20 @@
 
     <div class="counter" id="counter"></div>
 
+    <div class="live-hearts" id="liveHearts"></div>
+
+    <div class="upload-toast" id="uploadToast">
+      <span class="icon">♥</span>
+      <span><span class="label">Neues Foto</span> <b id="toastName"></b></span>
+    </div>
+
+    <div class="milestone" id="milestone">
+      <div class="mbox">
+        <div class="mnum" id="milestoneNum">50</div>
+        <div class="mtxt" id="milestoneTxt">Fotos · Danke!</div>
+      </div>
+    </div>
+
     <script>
       // ---- Einstellungen (im localStorage gespeichert, außer auf Artifact-Plattformen)
       const DEFAULTS = {
@@ -384,6 +508,61 @@
       let activeSlideEl = slideA;
       let inactiveSlideEl = slideB;
       let advanceTimer = null;
+      let firstFetchDone = false;
+      const celebratedMilestones = new Set();
+
+      // ---- Herzen steigen auf, wenn ein neues Foto reinkommt
+      const liveHeartsEl = document.getElementById('liveHearts');
+      function spawnLiveHearts(count) {
+        const glyphs = ['♥', '❤', '♥', '♥'];
+        for (let i = 0; i < count; i++) {
+          const h = document.createElement('span');
+          h.className = 'h';
+          h.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
+          const startX = 5 + Math.random() * 90;
+          const drift = (Math.random() - 0.5) * 220;
+          const dur = 5 + Math.random() * 3;
+          const delay = Math.random() * 0.9;
+          const size = 28 + Math.random() * 48;
+          h.style.left = startX + 'vw';
+          h.style.fontSize = size + 'px';
+          h.style.animationDuration = dur + 's';
+          h.style.animationDelay = delay + 's';
+          h.style.setProperty('--drift', drift + 'px');
+          liveHeartsEl.appendChild(h);
+          setTimeout(() => h.remove(), (dur + delay + 0.5) * 1000);
+        }
+      }
+
+      // ---- Upload-Toast
+      const toastEl = document.getElementById('uploadToast');
+      const toastNameEl = document.getElementById('toastName');
+      let toastTimer = null;
+      function showUploadToast(name) {
+        toastNameEl.textContent = name ? 'von ' + name : 'ist da';
+        toastEl.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.remove('show'), 5000);
+      }
+
+      // ---- Meilenstein (bei 25, 50, 100, 150, 200, …)
+      const milestoneEl = document.getElementById('milestone');
+      const milestoneNumEl = document.getElementById('milestoneNum');
+      const milestoneTxtEl = document.getElementById('milestoneTxt');
+      function isMilestone(n) {
+        if (n === 25 || n === 50) return true;
+        if (n >= 100 && n % 50 === 0) return true;
+        return false;
+      }
+      function celebrateMilestone(n) {
+        if (celebratedMilestones.has(n)) return;
+        celebratedMilestones.add(n);
+        milestoneNumEl.textContent = n;
+        milestoneTxtEl.textContent = 'Fotos · Danke euch!';
+        milestoneEl.classList.add('show');
+        spawnLiveHearts(50);
+        setTimeout(() => milestoneEl.classList.remove('show'), 5500);
+      }
 
       // ---- Bilder vom Server holen
       async function fetchImages() {
@@ -406,6 +585,13 @@
             newOnes.forEach((i) => shownIds.delete(i.id));
           }
 
+          // Live-Feier nur nach dem initialen Laden (sonst feiert man bei jedem Reload alle Bilder)
+          if (firstFetchDone && newOnes.length > 0) {
+            const first = newOnes[0];
+            showUploadToast(first.name || '');
+            spawnLiveHearts(Math.min(25, 8 + newOnes.length * 3));
+          }
+
           if (images.length > 0) {
             waiting.classList.add('hidden');
             if (!current) startPlayback();
@@ -413,6 +599,15 @@
             waiting.classList.remove('hidden');
           }
           updateCounter();
+
+          // Meilenstein feiern — aber beim initialen Laden überspringen
+          if (firstFetchDone && isMilestone(images.length)) {
+            celebrateMilestone(images.length);
+          } else if (!firstFetchDone && isMilestone(images.length)) {
+            // Beim Start: als "schon gefeiert" markieren, damit wir nicht doppelt feiern
+            celebratedMilestones.add(images.length);
+          }
+          firstFetchDone = true;
         } catch (err) {
           console.error('Fetch-Fehler:', err);
         }

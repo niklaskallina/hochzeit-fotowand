@@ -258,6 +258,103 @@
         cursor: pointer;
       }
       .ghost-btn:hover { background: var(--bg-2); }
+
+      /* ---- Foto-Challenge Karte ---- */
+      .challenge {
+        background: linear-gradient(135deg, #fffaed 0%, #fdf3dc 100%);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 14px 16px;
+        margin-bottom: 18px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        position: relative;
+        overflow: hidden;
+      }
+      .challenge::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at top right, rgba(196, 162, 106, 0.15), transparent 60%);
+        pointer-events: none;
+      }
+      .challenge .emoji {
+        font-size: 28px;
+        flex-shrink: 0;
+        filter: drop-shadow(0 2px 4px rgba(94, 72, 38, 0.2));
+      }
+      .challenge .text {
+        flex: 1;
+        font-size: 14px;
+        line-height: 1.35;
+        color: var(--ink);
+      }
+      .challenge .text b {
+        font-family: 'Cormorant Garamond', serif;
+        font-weight: 500;
+        font-style: italic;
+        color: var(--accent-deep);
+        font-size: 15px;
+        letter-spacing: 0.02em;
+      }
+      .challenge .refresh {
+        background: none;
+        border: none;
+        color: var(--accent);
+        font-size: 18px;
+        cursor: pointer;
+        padding: 4px;
+        opacity: 0.7;
+        transition: opacity 0.15s, transform 0.3s;
+      }
+      .challenge .refresh:hover { opacity: 1; }
+      .challenge .refresh.spin { transform: rotate(360deg); }
+
+      /* ---- Herz-Konfetti auf Success ---- */
+      .hearts-burst {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
+        z-index: 1000;
+      }
+      .hearts-burst .h {
+        position: absolute;
+        bottom: -40px;
+        font-size: 28px;
+        animation: heart-rise linear forwards;
+        opacity: 0;
+        user-select: none;
+      }
+      @keyframes heart-rise {
+        0% {
+          transform: translateY(0) translateX(0) scale(0.5) rotate(var(--r0));
+          opacity: 0;
+        }
+        10% { opacity: 1; }
+        50% {
+          transform: translateY(-50vh) translateX(var(--drift)) scale(1) rotate(var(--r1));
+        }
+        100% {
+          transform: translateY(-110vh) translateX(calc(var(--drift) * 2)) scale(1.1) rotate(var(--r2));
+          opacity: 0;
+        }
+      }
+
+      .pulse-heart {
+        display: inline-block;
+        font-size: 72px;
+        color: #c6475d;
+        line-height: 1;
+        margin-bottom: 12px;
+        filter: drop-shadow(0 10px 30px rgba(198, 71, 93, 0.4));
+        animation: pulse 1.2s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.08); }
+      }
     </style>
   </head>
   <body>
@@ -273,6 +370,15 @@
           Teilt eure schönsten Bilder von heute — sie erscheinen direkt auf unserer Fotowand.
         </p>
       </header>
+
+      <div class="challenge" id="challenge">
+        <div class="emoji" id="challengeEmoji">📸</div>
+        <div class="text">
+          <b>Foto-Idee</b><br />
+          <span id="challengeText">Teilt einen besonderen Moment von heute.</span>
+        </div>
+        <button class="refresh" id="challengeRefresh" aria-label="Neue Idee" title="Neue Idee">↻</button>
+      </div>
 
       <div class="card" id="form-card">
         <div class="field">
@@ -310,13 +416,88 @@
       </div>
 
       <div class="card success-panel" id="success-card" style="display: none">
+        <div class="pulse-heart" aria-hidden="true">♥</div>
         <div class="big">Vielen Dank!</div>
-        <div class="small">Euer Foto erscheint gleich auf der Fotowand.</div>
+        <div class="small" id="success-small">Euer Foto erscheint gleich auf der Fotowand.</div>
         <button class="ghost-btn" id="again">Noch eins hochladen</button>
+        <div style="margin-top: 14px; font-size: 12px; color: var(--ink-soft);">
+          <a href="/stats" style="color: var(--accent-deep); text-decoration: none;">Statistik ansehen ›</a>
+        </div>
       </div>
     </div>
 
+    <div class="hearts-burst" id="heartsBurst" aria-hidden="true"></div>
+
     <script>
+      // ---------- Foto-Challenges: wechseln bei Klick auf ↻ ----------
+      const CHALLENGES = [
+        { e: '💃', t: 'Fotografiert die erste Tanz-Einlage — egal ob elegant oder peinlich.' },
+        { e: '🥂', t: 'Ein Toast-Moment! Halte die Gläser hoch und klick!' },
+        { e: '👰', t: 'Ein Selfie mit dem Brautpaar — jetzt oder nie!' },
+        { e: '👞', t: 'Fotografiert die schönsten Schuhe des Abends.' },
+        { e: '🎂', t: 'Torten-Moment: der erste Anschnitt in voller Schärfe.' },
+        { e: '💐', t: 'Der Brautstrauß aus nächster Nähe — oder wer ihn fängt.' },
+        { e: '😂', t: 'Der lustigste Gesichtsausdruck, den ihr heute seht.' },
+        { e: '👫', t: 'Ein Foto mit euren Tisch-Nachbarn.' },
+        { e: '🌅', t: 'Fangt die Stimmung der Location ein — Deko, Licht, Atmosphäre.' },
+        { e: '👟', t: 'Schuhe aus, Tanzfläche frei! Fotografiert barfüßige Gäste.' },
+        { e: '🎵', t: 'Der DJ / die Band in Aktion.' },
+        { e: '🥰', t: 'Zwei Gäste, die sich gerade ganz fest umarmen.' },
+        { e: '🍽️', t: 'Die schönste Vorspeise, der beste Hauptgang — Essen-Close-up!' },
+        { e: '👶', t: 'Das jüngste (oder älteste) Gäst im Bild.' },
+        { e: '💍', t: 'Die Ringe in Großaufnahme.' },
+        { e: '🕺', t: 'Bester Tanzmove des Abends — haltet drauf!' },
+        { e: '📷', t: 'Ein spontanes Gruppenfoto, das nicht gestellt ist.' },
+        { e: '🌳', t: 'Geht raus und macht ein Foto in der Natur.' },
+        { e: '✨', t: 'Der magischste Moment des Tages — ihr erkennt ihn.' },
+        { e: '🎁', t: 'Das originellste Geschenk, das ihr entdecken könnt.' },
+      ];
+      let challengeIdx = Math.floor(Math.random() * CHALLENGES.length);
+      const challengeEmoji = document.getElementById('challengeEmoji');
+      const challengeText = document.getElementById('challengeText');
+      const challengeRefresh = document.getElementById('challengeRefresh');
+      function showChallenge() {
+        const c = CHALLENGES[challengeIdx];
+        challengeEmoji.textContent = c.e;
+        challengeText.textContent = c.t;
+      }
+      showChallenge();
+      challengeRefresh.addEventListener('click', () => {
+        let next = Math.floor(Math.random() * CHALLENGES.length);
+        if (next === challengeIdx) next = (next + 1) % CHALLENGES.length;
+        challengeIdx = next;
+        challengeRefresh.classList.remove('spin');
+        void challengeRefresh.offsetWidth;
+        challengeRefresh.classList.add('spin');
+        showChallenge();
+      });
+
+      // ---------- Herz-Burst: steigt beim Upload-Erfolg auf ----------
+      const heartsBurstEl = document.getElementById('heartsBurst');
+      function burstHearts(count) {
+        const hearts = ['♥', '♥', '♥', '❤️', '💖', '💕'];
+        for (let i = 0; i < count; i++) {
+          const h = document.createElement('span');
+          h.className = 'h';
+          h.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+          const startX = Math.random() * 100;
+          const drift = (Math.random() - 0.5) * 120; // px
+          const dur = 3 + Math.random() * 2.5; // Sek.
+          const delay = Math.random() * 0.8;
+          const size = 20 + Math.random() * 28;
+          h.style.left = startX + 'vw';
+          h.style.fontSize = size + 'px';
+          h.style.animationDuration = dur + 's';
+          h.style.animationDelay = delay + 's';
+          h.style.setProperty('--drift', drift + 'px');
+          h.style.setProperty('--r0', Math.random() * 30 - 15 + 'deg');
+          h.style.setProperty('--r1', Math.random() * 60 - 30 + 'deg');
+          h.style.setProperty('--r2', Math.random() * 120 - 60 + 'deg');
+          heartsBurstEl.appendChild(h);
+          setTimeout(() => h.remove(), (dur + delay + 0.5) * 1000);
+        }
+      }
+
       // ---------- Event-Einstellungen laden ----------
       (async function loadEventSettings() {
         try {
@@ -475,9 +656,18 @@
           }
 
           barEl.style.width = '100%';
+          const uploaded = total;
           setTimeout(() => {
             formCard.style.display = 'none';
+            document.getElementById('challenge').style.display = 'none';
+            const smallEl = document.getElementById('success-small');
+            smallEl.textContent =
+              uploaded > 1
+                ? 'Eure ' + uploaded + ' Fotos erscheinen gleich auf der Fotowand.'
+                : 'Euer Foto erscheint gleich auf der Fotowand.';
             successCard.style.display = 'block';
+            // Herz-Konfetti: mehr Herzen bei mehr Fotos
+            burstHearts(Math.min(40, 14 + uploaded * 3));
           }, 300);
         } catch (err) {
           console.error(err);
@@ -501,6 +691,10 @@
         hideStatus();
         successCard.style.display = 'none';
         formCard.style.display = 'block';
+        document.getElementById('challenge').style.display = '';
+        // Neue Foto-Idee zeigen
+        challengeIdx = (challengeIdx + 1 + Math.floor(Math.random() * 3)) % CHALLENGES.length;
+        showChallenge();
       });
     </script>
   </body>

@@ -4,6 +4,7 @@
     { "source": "/", "destination": "/upload.html" },
     { "source": "/slideshow", "destination": "/slideshow.html" },
     { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/qr", "destination": "/qr-generator.html" }
+    { "source": "/qr", "destination": "/qr-generator.html" },
+    { "source": "/stats", "destination": "/stats.html" }
   ]
 }
