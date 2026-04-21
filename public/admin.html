@@ -243,18 +243,35 @@
       .thumb {
         position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden;
         background: var(--bg-2); border: 1px solid var(--line);
+        transition: box-shadow 0.15s, border-color 0.15s;
       }
+      .thumb.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
       .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-      .thumb .del {
-        position: absolute; top: 4px; right: 4px;
+      .thumb .del,
+      .thumb .dl {
+        position: absolute;
         width: 26px; height: 26px; border-radius: 50%;
-        background: rgba(163, 58, 58, 0.92); color: #fff;
-        border: none; font-size: 15px; line-height: 1; cursor: pointer;
+        color: #fff; border: none; font-size: 15px; line-height: 1; cursor: pointer;
         display: grid; place-items: center;
         box-shadow: 0 2px 8px rgba(0,0,0,0.25);
         opacity: 0; transition: opacity 0.15s;
+        text-decoration: none;
       }
-      .thumb:hover .del, .thumb:focus-within .del { opacity: 1; }
+      .thumb .del { top: 4px; right: 4px; background: rgba(163, 58, 58, 0.92); }
+      .thumb .dl  { top: 4px; right: 34px; background: rgba(40, 90, 150, 0.92); font-size: 13px; }
+      .thumb:hover .del, .thumb:focus-within .del,
+      .thumb:hover .dl,  .thumb:focus-within .dl { opacity: 1; }
+      .thumb .pick {
+        position: absolute; top: 4px; left: 4px;
+        width: 22px; height: 22px; border-radius: 6px;
+        background: rgba(255,255,255,0.9);
+        display: grid; place-items: center;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        opacity: 0; transition: opacity 0.15s;
+      }
+      .thumb:hover .pick, .thumb:focus-within .pick, .thumb.selected .pick { opacity: 1; }
+      .thumb .pick input { margin: 0; cursor: pointer; }
       .thumb .meta {
         position: absolute; bottom: 0; left: 0; right: 0;
         padding: 4px 6px; font-size: 10px; color: #fff;
@@ -265,8 +282,15 @@
       .gallery-head {
         display: flex; justify-content: space-between; align-items: center;
         margin-bottom: 4px;
+        gap: 8px; flex-wrap: wrap;
       }
       .gallery-head .count { font-size: 12px; color: var(--ink-soft); }
+      .gallery-actions {
+        display: flex; gap: 6px; flex-wrap: wrap;
+        margin: 8px 0 4px;
+      }
+      .gallery-actions .btn { padding: 6px 10px; font-size: 12px; }
+      .gallery-actions .sep { flex: 1 1 auto; }
     </style>
   </head>
   <body>
@@ -371,7 +395,14 @@
             <h2>Foto-Galerie</h2>
             <div class="count" id="galleryCount"></div>
           </div>
-          <div class="hint">Alle hochgeladenen Fotos. Zum Löschen auf das rote × fahren und klicken. Gelöschte Fotos verschwinden auch aus der Slideshow.</div>
+          <div class="hint">Mit der Maus über ein Foto fahren: ↓ lädt dieses einzelne Bild herunter, × löscht es. Mehrere auswählen per Checkbox links oben — dann „Auswahl als ZIP". Oder direkt „Alles als ZIP" für den kompletten Dump am Ende der Hochzeit.</div>
+          <div class="gallery-actions">
+            <button class="btn secondary" id="selectAllBtn" type="button">Alle auswählen</button>
+            <button class="btn secondary" id="selectNoneBtn" type="button">Auswahl leeren</button>
+            <span class="sep"></span>
+            <button class="btn" id="downloadSelectedBtn" type="button" disabled>Auswahl als ZIP (<span id="selCount">0</span>)</button>
+            <button class="btn secondary" id="downloadAllBtn" type="button">Alles als ZIP</button>
+          </div>
           <div id="gallery" class="gallery"></div>
           <div id="galleryEmpty" class="gallery-empty" style="display:none">Noch keine Fotos hochgeladen.</div>
           <div class="save-row" style="margin-top: 14px">
@@ -635,45 +666,147 @@
         }
       });
 
-      // ---- Foto-Galerie mit Löschen ----
+      // ---- Foto-Galerie mit Auswahl, Download, Löschen ----
       function escapeHtml(s) {
         return String(s || '').replace(/[&<>"']/g, (c) =>
           ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
       }
 
+      let totalCount = 0;
+      const selected = new Set(); // publicIds
+
+      const selectAllBtn = document.getElementById('selectAllBtn');
+      const selectNoneBtn = document.getElementById('selectNoneBtn');
+      const downloadSelectedBtn = document.getElementById('downloadSelectedBtn');
+      const downloadAllBtn = document.getElementById('downloadAllBtn');
+      const selCountEl = document.getElementById('selCount');
+
+      function updateSelectionUI() {
+        selCountEl.textContent = selected.size;
+        downloadSelectedBtn.disabled = selected.size === 0;
+      }
+
       async function loadGallery() {
         galleryEl.innerHTML = '<div class="gallery-empty">Lade Fotos…</div>';
         galleryEmpty.style.display = 'none';
+        selected.clear();
+        updateSelectionUI();
         try {
           const res = await fetch('/api/images', { cache: 'no-store' });
           if (!res.ok) throw new Error('Status ' + res.status);
           const data = await res.json();
           const images = data.images || [];
+          totalCount = images.length;
           galleryCount.textContent = images.length + ' Foto' + (images.length === 1 ? '' : 's');
           if (images.length === 0) {
             galleryEl.innerHTML = '';
             galleryEmpty.style.display = 'block';
+            downloadAllBtn.disabled = true;
+            selectAllBtn.disabled = true;
             return;
           }
           galleryEmpty.style.display = 'none';
+          downloadAllBtn.disabled = false;
+          selectAllBtn.disabled = false;
           galleryEl.innerHTML = images.map((img) => {
             const meta = img.name ? escapeHtml(img.name) : '';
+            const dl = img.downloadUrl || img.url;
             return `
               <div class="thumb" data-id="${escapeHtml(img.id)}">
                 <img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.name || '')}" loading="lazy" />
                 ${meta ? `<div class="meta">${meta}</div>` : ''}
+                <label class="pick" title="Auswählen">
+                  <input type="checkbox" aria-label="Auswählen" />
+                </label>
+                <a class="dl" href="${escapeHtml(dl)}" title="Herunterladen" aria-label="Herunterladen" download>↓</a>
                 <button class="del" title="Foto löschen" aria-label="Foto löschen">×</button>
               </div>`;
           }).join('');
           galleryEl.querySelectorAll('.thumb').forEach((tile) => {
             const id = tile.getAttribute('data-id');
-            tile.querySelector('.del').addEventListener('click', () => deletePhoto(id, tile));
+            tile.querySelector('.del').addEventListener('click', (e) => {
+              e.preventDefault(); e.stopPropagation();
+              deletePhoto(id, tile);
+            });
+            const cb = tile.querySelector('.pick input');
+            cb.addEventListener('change', () => {
+              if (cb.checked) { selected.add(id); tile.classList.add('selected'); }
+              else { selected.delete(id); tile.classList.remove('selected'); }
+              updateSelectionUI();
+            });
+            tile.querySelector('.pick').addEventListener('click', (e) => e.stopPropagation());
           });
         } catch (err) {
           galleryEl.innerHTML = '';
           showStatus(galleryStatus, 'Konnte Galerie nicht laden: ' + err.message, 'err');
         }
       }
+
+      selectAllBtn.addEventListener('click', () => {
+        galleryEl.querySelectorAll('.thumb').forEach((tile) => {
+          const id = tile.getAttribute('data-id');
+          const cb = tile.querySelector('.pick input');
+          cb.checked = true;
+          selected.add(id);
+          tile.classList.add('selected');
+        });
+        updateSelectionUI();
+      });
+
+      selectNoneBtn.addEventListener('click', () => {
+        galleryEl.querySelectorAll('.thumb').forEach((tile) => {
+          const cb = tile.querySelector('.pick input');
+          cb.checked = false;
+          tile.classList.remove('selected');
+        });
+        selected.clear();
+        updateSelectionUI();
+      });
+
+      async function requestZip(publicIdsOrAll, btn) {
+        const label = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Erstelle ZIP…';
+        showStatus(galleryStatus, 'Cloudinary packt deine Fotos. Bei vielen Bildern kann das 10–30 Sekunden dauern…', 'ok');
+        try {
+          const res = await fetch('/api/download', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
+            body: JSON.stringify({ publicIds: publicIdsOrAll }),
+          });
+          if (!res.ok) {
+            const d = await res.json().catch(() => ({}));
+            throw new Error(d.error || 'Status ' + res.status);
+          }
+          const d = await res.json();
+          showStatus(galleryStatus, 'ZIP bereit (' + d.count + ' Fotos). Download startet…', 'ok');
+          // Sicherstellen, dass der Browser das ZIP herunterlädt (nicht in Tab öffnet)
+          const a = document.createElement('a');
+          a.href = d.url;
+          a.download = 'hochzeit-fotos-' + new Date().toISOString().slice(0, 10) + '.zip';
+          a.rel = 'noopener';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        } catch (err) {
+          showStatus(galleryStatus, 'ZIP fehlgeschlagen: ' + err.message, 'err');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = label;
+          if (btn === downloadSelectedBtn) updateSelectionUI();
+        }
+      }
+
+      downloadSelectedBtn.addEventListener('click', () => {
+        if (selected.size === 0) return;
+        requestZip(Array.from(selected), downloadSelectedBtn);
+      });
+
+      downloadAllBtn.addEventListener('click', () => {
+        if (totalCount === 0) return;
+        if (!confirm('Alle ' + totalCount + ' Fotos als ZIP herunterladen?')) return;
+        requestZip('all', downloadAllBtn);
+      });
 
       async function deletePhoto(publicId, tileEl) {
         if (!confirm('Dieses Foto wirklich löschen?\n\nEs verschwindet auch aus der Slideshow.')) return;
@@ -688,10 +821,17 @@
             const d = await res.json().catch(() => ({}));
             throw new Error(d.error || 'Status ' + res.status);
           }
+          selected.delete(publicId);
           tileEl.remove();
           const remaining = galleryEl.querySelectorAll('.thumb').length;
+          totalCount = remaining;
           galleryCount.textContent = remaining + ' Foto' + (remaining === 1 ? '' : 's');
-          if (remaining === 0) galleryEmpty.style.display = 'block';
+          if (remaining === 0) {
+            galleryEmpty.style.display = 'block';
+            downloadAllBtn.disabled = true;
+            selectAllBtn.disabled = true;
+          }
+          updateSelectionUI();
           showStatus(galleryStatus, 'Foto gelöscht', 'ok');
         } catch (err) {
           tileEl.style.opacity = '';

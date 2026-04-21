@@ -57,6 +57,12 @@ module.exports = async (req, res) => {
           crop: 'fill',
           gravity: 'auto',
         }),
+        downloadUrl: cloudinary.url(r.public_id, {
+          flags: 'attachment',
+          secure: true,
+          resource_type: 'image',
+          format: r.format,
+        }),
         createdAt: r.created_at,
         name: r.context?.alt || '',
         message: r.context?.caption || '',
