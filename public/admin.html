@@ -679,10 +679,11 @@
       const selectNoneBtn = document.getElementById('selectNoneBtn');
       const downloadSelectedBtn = document.getElementById('downloadSelectedBtn');
       const downloadAllBtn = document.getElementById('downloadAllBtn');
-      const selCountEl = document.getElementById('selCount');
 
       function updateSelectionUI() {
-        selCountEl.textContent = selected.size;
+        // Span frisch suchen — er wird ggf. neu angelegt, wenn requestZip innerHTML wiederherstellt
+        const span = document.getElementById('selCount');
+        if (span) span.textContent = selected.size;
         downloadSelectedBtn.disabled = selected.size === 0;
       }
 
@@ -764,7 +765,7 @@
       });
 
       async function requestZip(publicIdsOrAll, btn) {
-        const label = btn.textContent;
+        const originalHTML = btn.innerHTML;
         btn.disabled = true;
         btn.textContent = 'Erstelle ZIP…';
         showStatus(galleryStatus, 'Cloudinary packt deine Fotos. Bei vielen Bildern kann das 10–30 Sekunden dauern…', 'ok');
@@ -780,7 +781,6 @@
           }
           const d = await res.json();
           showStatus(galleryStatus, 'ZIP bereit (' + d.count + ' Fotos). Download startet…', 'ok');
-          // Sicherstellen, dass der Browser das ZIP herunterlädt (nicht in Tab öffnet)
           const a = document.createElement('a');
           a.href = d.url;
           a.download = 'hochzeit-fotos-' + new Date().toISOString().slice(0, 10) + '.zip';
@@ -792,8 +792,13 @@
           showStatus(galleryStatus, 'ZIP fehlgeschlagen: ' + err.message, 'err');
         } finally {
           btn.disabled = false;
-          btn.textContent = label;
-          if (btn === downloadSelectedBtn) updateSelectionUI();
+          btn.innerHTML = originalHTML;
+          if (btn === downloadSelectedBtn) {
+            // innerHTML hat das span neu angelegt → Referenz auffrischen und Zähler anzeigen
+            const newSpan = btn.querySelector('#selCount');
+            if (newSpan) newSpan.textContent = selected.size;
+            downloadSelectedBtn.disabled = selected.size === 0;
+          }
         }
       }
 

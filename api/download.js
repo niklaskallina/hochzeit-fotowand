@@ -62,16 +62,18 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Keine gültigen Bilder in der Auswahl' });
     }
 
-    const zipResult = await cloudinary.uploader.create_zip({
+    // download_zip_url liefert eine signierte URL, die Cloudinary on-the-fly
+    // einen ZIP-Stream erzeugen lässt. Keine Zwischenspeicherung nötig.
+    const url = cloudinary.utils.download_zip_url({
       public_ids: publicIds,
       resource_type: 'image',
       target_format: 'zip',
-      use_original_filename: false,
+      flatten_folders: true,
     });
 
     return res.status(200).json({
       ok: true,
-      url: zipResult.secure_url,
+      url,
       count: publicIds.length,
     });
   } catch (err) {
