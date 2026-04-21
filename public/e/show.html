@@ -309,7 +309,7 @@
       /* ---- Benachrichtigung über neuen Upload ---- */
       .upload-toast {
         position: fixed;
-        top: 40px;
+        top: 0;
         left: 50%;
         transform: translateX(-50%) translateY(-120%);
         background: rgba(20, 16, 12, 0.88);
@@ -328,7 +328,7 @@
         white-space: nowrap;
         max-width: 90vw;
       }
-      .upload-toast.show { transform: translateX(-50%) translateY(0); }
+      .upload-toast.show { transform: translateX(-50%) translateY(40px); }
       .upload-toast .icon {
         font-size: 22px;
         color: #c6475d;
