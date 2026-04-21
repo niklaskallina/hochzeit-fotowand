@@ -1,10 +1,8 @@
 {
   "name": "hochzeit-fotowand",
-  "version": "2.0.0",
-  "description": "Live-Fotowand für Hochzeiten — Multi-Mandanten-SaaS",
+  "version": "1.0.0",
+  "description": "Live-Fotowand für Hochzeiten — Gäste scannen QR, laden Fotos hoch, Beamer zeigt Slideshow",
   "dependencies": {
-    "cloudinary": "^2.5.1",
-    "@supabase/supabase-js": "^2.45.0",
-    "resend": "^4.0.0"
+    "cloudinary": "^2.5.1"
   }
 }

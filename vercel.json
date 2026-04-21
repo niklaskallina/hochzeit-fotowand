@@ -1,27 +1,10 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/", "destination": "/index.html" },
-
-    { "source": "/e/:slug", "destination": "/e/upload.html" },
-    { "source": "/e/:slug/show", "destination": "/e/show.html" },
-    { "source": "/e/:slug/stats", "destination": "/e/stats.html" },
-
-    { "source": "/login", "destination": "/auth/login.html" },
-    { "source": "/auth/callback", "destination": "/auth/callback.html" },
-
-    { "source": "/dashboard", "destination": "/dashboard/index.html" },
-    { "source": "/admin-panel", "destination": "/admin-panel/index.html" },
-
-    { "source": "/impressum", "destination": "/legal/impressum.html" },
-    { "source": "/datenschutz", "destination": "/legal/datenschutz.html" },
-    { "source": "/agb", "destination": "/legal/agb.html" },
-    { "source": "/widerruf", "destination": "/legal/widerruf.html" },
-
-    { "source": "/legacy", "destination": "/upload.html" },
-    { "source": "/legacy/slideshow", "destination": "/slideshow.html" },
-    { "source": "/legacy/admin", "destination": "/admin.html" },
-    { "source": "/legacy/stats", "destination": "/stats.html" },
+    { "source": "/", "destination": "/upload.html" },
+    { "source": "/slideshow", "destination": "/slideshow.html" },
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/stats", "destination": "/stats.html" },
     { "source": "/qr", "destination": "/qr-generator.html" }
   ]
 }
