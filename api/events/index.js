@@ -1,15 +1,35 @@
 // /api/events
-// GET   → Liste der eigenen Events
-// POST  → Neues Event anlegen { slug, couple_names?, event_date?, plan? }
+// GET  ?slug=<slug>  → öffentliches Lookup per Slug (für Gäste-Seiten), nur `status = 'active'`
+// GET                → Liste der eigenen Events (Auth nötig)
+// POST               → Neues Event anlegen { slug, couple_names?, event_date?, plan? } (Auth nötig)
 //
-// Events sind in Supabase per RLS auf den Besitzer beschränkt; wir lesen/schreiben
-// mit dem Access-Token des Users, damit die Policies greifen.
+// Auth-geschützte Reads/Writes laufen per Supabase-Anon-Client mit User-Token, damit RLS greift.
+// Der öffentliche Slug-Lookup nutzt den Admin-Client mit expliziter `status = 'active'`-Filterung,
+// damit der Gast kein gültiges Token braucht.
 
-const { requireUser } = require('../_lib/auth');
-const { getAnon } = require('../_lib/supabase');
-const { readAccessToken } = require('../_lib/auth');
+const { requireUser, readAccessToken } = require('../_lib/auth');
+const { getAdmin, getAnon } = require('../_lib/supabase');
 
 module.exports = async (req, res) => {
+  if (req.method === 'GET' && req.query && typeof req.query.slug === 'string' && req.query.slug) {
+    try {
+      const sb = getAdmin();
+      const { data, error } = await sb
+        .from('events')
+        .select('id, slug, couple_names, welcome_text, couple_photo_url, event_date, status, plan')
+        .eq('slug', req.query.slug.toLowerCase())
+        .eq('status', 'active')
+        .maybeSingle();
+      if (error) return res.status(500).json({ error: error.message });
+      if (!data) return res.status(404).json({ error: 'Event nicht gefunden' });
+      res.setHeader('Cache-Control', 'no-store, max-age=0');
+      return res.status(200).json({ event: data });
+    } catch (err) {
+      console.error('public slug lookup:', err);
+      return res.status(500).json({ error: 'Event konnte nicht geladen werden' });
+    }
+  }
+
   const user = await requireUser(req, res);
   if (!user) return;
   const token = readAccessToken(req);

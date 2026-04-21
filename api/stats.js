@@ -12,9 +12,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-async function loadStatsResetAt() {
+const SETTINGS_PUBLIC_ID = 'hochzeit-meta/settings';
+
+async function loadSettings() {
   try {
-    const SETTINGS_PUBLIC_ID = 'hochzeit-meta/settings';
     const resource = await cloudinary.api.resource(SETTINGS_PUBLIC_ID, { resource_type: 'raw' });
     const url = cloudinary.url(SETTINGS_PUBLIC_ID, {
       resource_type: 'raw',
@@ -22,17 +23,45 @@ async function loadStatsResetAt() {
       sign_url: false,
     });
     const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) return null;
-    const data = JSON.parse(await res.text());
-    return data.statsResetAt || null;
+    if (!res.ok) return {};
+    return JSON.parse(await res.text());
   } catch (e) {
-    return null;
+    return {};
   }
+}
+
+async function saveSettings(payload) {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: 'raw',
+        public_id: SETTINGS_PUBLIC_ID,
+        overwrite: true,
+        invalidate: true,
+        use_filename: false,
+        unique_filename: false,
+      },
+      (err, result) => (err ? reject(err) : resolve(result))
+    );
+    stream.end(Buffer.from(JSON.stringify(payload, null, 2), 'utf-8'));
+  });
 }
 
 module.exports = async (req, res) => {
   try {
-    const statsResetAt = await loadStatsResetAt();
+    if (req.method === 'DELETE') {
+      const adminPw = process.env.ADMIN_PASSWORD;
+      if (adminPw && req.headers['x-admin-password'] !== adminPw) {
+        return res.status(401).json({ error: 'Falsches Admin-Passwort' });
+      }
+      const current = await loadSettings();
+      const payload = { ...current, statsResetAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+      await saveSettings(payload);
+      return res.status(200).json({ ok: true, statsResetAt: payload.statsResetAt });
+    }
+
+    const current = await loadSettings();
+    const statsResetAt = current.statsResetAt || null;
     const resetCutoff = statsResetAt ? new Date(statsResetAt) : null;
 
     let all = [];

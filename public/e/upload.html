@@ -660,7 +660,7 @@
       // ---------- Event-Einstellungen laden ----------
       (async function loadEventSettings() {
         try {
-          const res = await fetch('/api/events/by-slug?slug=' + encodeURIComponent(SLUG), {
+          const res = await fetch('/api/events?slug=' + encodeURIComponent(SLUG), {
             cache: 'no-store',
           });
           if (!res.ok) {

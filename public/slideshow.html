@@ -451,6 +451,27 @@
         </div>
         <input id="captionsInput" type="checkbox" checked />
       </div>
+      <div class="row">
+        <div>
+          <label for="heartsInput">Herzen-Animation</label>
+          <div class="hint">bei neuen Uploads</div>
+        </div>
+        <input id="heartsInput" type="checkbox" checked />
+      </div>
+      <div class="row">
+        <div>
+          <label for="toastInput">Upload-Hinweis</label>
+          <div class="hint">kurze „Neues Foto"-Einblendung</div>
+        </div>
+        <input id="toastInput" type="checkbox" checked />
+      </div>
+      <div class="row">
+        <div>
+          <label for="milestonesInput">Meilensteine feiern</label>
+          <div class="hint">z. B. 25, 50, 100 Fotos</div>
+        </div>
+        <input id="milestonesInput" type="checkbox" checked />
+      </div>
       <div class="panel-actions">
         <button class="secondary" id="closePanel">Schließen</button>
         <button id="saveSettings">Speichern</button>
@@ -480,6 +501,9 @@
         random: false,
         newFirst: true,
         captions: true,
+        hearts: true,
+        toast: true,
+        milestones: true,
       };
       function loadSettings() {
         try {
@@ -494,6 +518,25 @@
         } catch (e) {}
       }
       let settings = loadSettings();
+
+      // Server-Einstellungen (vom Admin-Dashboard gesteuert). Local-Toggles können
+      // die Animationen zusätzlich ausblenden, aber nicht gegen den Server-Wunsch einblenden.
+      let serverSettings = { showHearts: true, showToast: true, showMilestones: true };
+      async function loadServerSettings() {
+        try {
+          const res = await fetch('/api/settings', { cache: 'no-store' });
+          if (!res.ok) return;
+          const d = await res.json();
+          serverSettings = {
+            showHearts: d.showHearts !== false,
+            showToast: d.showToast !== false,
+            showMilestones: d.showMilestones !== false,
+          };
+        } catch (e) {}
+      }
+      const heartsEnabled = () => serverSettings.showHearts && settings.hearts;
+      const toastEnabled = () => serverSettings.showToast && settings.toast;
+      const milestonesEnabled = () => serverSettings.showMilestones && settings.milestones;
 
       // ---- State
       const slideA = document.getElementById('slide-a');
@@ -560,7 +603,7 @@
         milestoneNumEl.textContent = n;
         milestoneTxtEl.textContent = 'Fotos · Danke euch!';
         milestoneEl.classList.add('show');
-        spawnLiveHearts(50);
+        if (heartsEnabled()) spawnLiveHearts(50);
         setTimeout(() => milestoneEl.classList.remove('show'), 5500);
       }
 
@@ -588,8 +631,8 @@
           // Live-Feier nur nach dem initialen Laden (sonst feiert man bei jedem Reload alle Bilder)
           if (firstFetchDone && newOnes.length > 0) {
             const first = newOnes[0];
-            showUploadToast(first.name || '');
-            spawnLiveHearts(Math.min(25, 8 + newOnes.length * 3));
+            if (toastEnabled()) showUploadToast(first.name || '');
+            if (heartsEnabled()) spawnLiveHearts(Math.min(25, 8 + newOnes.length * 3));
           }
 
           if (images.length > 0) {
@@ -601,7 +644,7 @@
           updateCounter();
 
           // Meilenstein feiern — aber beim initialen Laden überspringen
-          if (firstFetchDone && isMilestone(images.length)) {
+          if (firstFetchDone && isMilestone(images.length) && milestonesEnabled()) {
             celebrateMilestone(images.length);
           } else if (!firstFetchDone && isMilestone(images.length)) {
             // Beim Start: als "schon gefeiert" markieren, damit wir nicht doppelt feiern
@@ -698,12 +741,18 @@
       const randomInput = document.getElementById('randomInput');
       const newFirstInput = document.getElementById('newFirstInput');
       const captionsInput = document.getElementById('captionsInput');
+      const heartsInput = document.getElementById('heartsInput');
+      const toastInput = document.getElementById('toastInput');
+      const milestonesInput = document.getElementById('milestonesInput');
 
       function syncPanelFromSettings() {
         durationInput.value = settings.durationSec;
         randomInput.checked = settings.random;
         newFirstInput.checked = settings.newFirst;
         captionsInput.checked = settings.captions;
+        heartsInput.checked = settings.hearts;
+        toastInput.checked = settings.toast;
+        milestonesInput.checked = settings.milestones;
       }
       syncPanelFromSettings();
 
@@ -719,6 +768,9 @@
           random: randomInput.checked,
           newFirst: newFirstInput.checked,
           captions: captionsInput.checked,
+          hearts: heartsInput.checked,
+          toast: toastInput.checked,
+          milestones: milestonesInput.checked,
         };
         saveSettings(settings);
         // Wenn Mischung geändert wurde → Playlist neu aufbauen
@@ -748,9 +800,11 @@
         }
       });
 
-      // ---- Start: alle 8 Sek. nach neuen Bildern suchen
-      fetchImages();
+      // ---- Start: Server-Settings einmalig laden, dann alle 8 Sek. nach neuen Bildern suchen
+      loadServerSettings().then(fetchImages);
       setInterval(fetchImages, 8000);
+      // Server-Settings periodisch auffrischen — Admin kann Animationen ein-/ausschalten
+      setInterval(loadServerSettings, 60000);
     </script>
   </body>
 </html>

@@ -86,12 +86,23 @@ module.exports = async (req, res) => {
         return res.status(401).json({ error: 'Falsches Admin-Passwort' });
       }
 
-      const { coupleNames = '', welcomeText = '', couplePhotoUrl = '' } = req.body || {};
+      const {
+        coupleNames = '',
+        welcomeText = '',
+        couplePhotoUrl = '',
+        showHearts,
+        showToast,
+        showMilestones,
+      } = req.body || {};
       const current = await loadSettings();
+      const asBool = (v, fallback) => (typeof v === 'boolean' ? v : fallback);
       const payload = {
         coupleNames: String(coupleNames).slice(0, 100),
         welcomeText: String(welcomeText).slice(0, 500),
         couplePhotoUrl: String(couplePhotoUrl).slice(0, 500),
+        showHearts: asBool(showHearts, current.showHearts !== false),
+        showToast: asBool(showToast, current.showToast !== false),
+        showMilestones: asBool(showMilestones, current.showMilestones !== false),
         updatedAt: new Date().toISOString(),
         ...(current.statsResetAt ? { statsResetAt: current.statsResetAt } : {}),
       };

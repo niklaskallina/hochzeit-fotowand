@@ -210,6 +210,63 @@
         color: var(--accent-deep);
         margin: 0 8px;
       }
+
+      /* Toggle-Reihen */
+      .toggle-row {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 12px 0; border-top: 1px solid var(--line);
+      }
+      .toggle-row:first-of-type { border-top: none; }
+      .toggle-row .tlabel { font-weight: 500; font-size: 14px; }
+      .toggle-row .thint { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+      .toggle-row input[type='checkbox'] {
+        width: 44px; height: 24px; appearance: none; background: var(--bg-2);
+        border-radius: 999px; position: relative; cursor: pointer; transition: background 0.2s;
+        border: 1px solid var(--line); flex-shrink: 0;
+      }
+      .toggle-row input[type='checkbox']::after {
+        content: ''; position: absolute; top: 2px; left: 2px;
+        width: 18px; height: 18px; border-radius: 50%;
+        background: #fff; transition: transform 0.2s;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      }
+      .toggle-row input[type='checkbox']:checked { background: var(--accent-deep); border-color: var(--accent-deep); }
+      .toggle-row input[type='checkbox']:checked::after { transform: translateX(20px); }
+
+      /* Foto-Galerie */
+      .gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .thumb {
+        position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden;
+        background: var(--bg-2); border: 1px solid var(--line);
+      }
+      .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .thumb .del {
+        position: absolute; top: 4px; right: 4px;
+        width: 26px; height: 26px; border-radius: 50%;
+        background: rgba(163, 58, 58, 0.92); color: #fff;
+        border: none; font-size: 15px; line-height: 1; cursor: pointer;
+        display: grid; place-items: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        opacity: 0; transition: opacity 0.15s;
+      }
+      .thumb:hover .del, .thumb:focus-within .del { opacity: 1; }
+      .thumb .meta {
+        position: absolute; bottom: 0; left: 0; right: 0;
+        padding: 4px 6px; font-size: 10px; color: #fff;
+        background: linear-gradient(transparent, rgba(0,0,0,0.7));
+        text-overflow: ellipsis; white-space: nowrap; overflow: hidden;
+      }
+      .gallery-empty { color: var(--ink-soft); font-size: 13px; padding: 20px 0; text-align: center; }
+      .gallery-head {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 4px;
+      }
+      .gallery-head .count { font-size: 12px; color: var(--ink-soft); }
     </style>
   </head>
   <body>
@@ -270,6 +327,34 @@
           </div>
         </div>
 
+        <!-- Slideshow-Animationen -->
+        <div class="card">
+          <h2>Slideshow-Animationen</h2>
+          <div class="hint">Steuert Effekte auf der Slideshow-Seite. Änderungen greifen beim nächsten Laden der Slideshow.</div>
+
+          <div class="toggle-row">
+            <div>
+              <div class="tlabel">Herzen-Animation bei neuen Fotos</div>
+              <div class="thint">Herzen steigen auf, wenn ein Gast ein Foto hochlädt</div>
+            </div>
+            <input id="toggleHearts" type="checkbox" checked />
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="tlabel">„Neues Foto"-Benachrichtigung</div>
+              <div class="thint">Toast oben am Bildschirm, wenn neues Foto kommt</div>
+            </div>
+            <input id="toggleToast" type="checkbox" checked />
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="tlabel">Meilenstein-Feier</div>
+              <div class="thint">Große Animation bei 25, 50, 100, 150 Fotos …</div>
+            </div>
+            <input id="toggleMilestones" type="checkbox" checked />
+          </div>
+        </div>
+
         <!-- Statistik zurücksetzen -->
         <div class="card">
           <h2>Statistik zurücksetzen</h2>
@@ -277,6 +362,21 @@
           <div class="save-row">
             <div class="status" id="resetStatus"></div>
             <button class="btn secondary" id="resetStatsBtn">Statistik zurücksetzen</button>
+          </div>
+        </div>
+
+        <!-- Foto-Galerie -->
+        <div class="card">
+          <div class="gallery-head">
+            <h2>Foto-Galerie</h2>
+            <div class="count" id="galleryCount"></div>
+          </div>
+          <div class="hint">Alle hochgeladenen Fotos. Zum Löschen auf das rote × fahren und klicken. Gelöschte Fotos verschwinden auch aus der Slideshow.</div>
+          <div id="gallery" class="gallery"></div>
+          <div id="galleryEmpty" class="gallery-empty" style="display:none">Noch keine Fotos hochgeladen.</div>
+          <div class="save-row" style="margin-top: 14px">
+            <div class="status" id="galleryStatus"></div>
+            <button class="btn secondary" id="refreshGalleryBtn">Aktualisieren</button>
           </div>
         </div>
 
@@ -306,6 +406,15 @@
       const welcomeEl = document.getElementById('welcome');
       const saveBtn = document.getElementById('saveBtn');
       const saveStatus = document.getElementById('saveStatus');
+
+      const toggleHearts = document.getElementById('toggleHearts');
+      const toggleToast = document.getElementById('toggleToast');
+      const toggleMilestones = document.getElementById('toggleMilestones');
+      const galleryEl = document.getElementById('gallery');
+      const galleryEmpty = document.getElementById('galleryEmpty');
+      const galleryCount = document.getElementById('galleryCount');
+      const galleryStatus = document.getElementById('galleryStatus');
+      const refreshGalleryBtn = document.getElementById('refreshGalleryBtn');
 
       let password = sessionStorage.getItem('adminPw') || '';
       let currentPhotoUrl = ''; // lokale Kopie der aktuellen Brautpaar-Bild-URL
@@ -337,6 +446,9 @@
           const s = await res.json();
           coupleEl.value = s.coupleNames || '';
           welcomeEl.value = s.welcomeText || '';
+          toggleHearts.checked = s.showHearts !== false;
+          toggleToast.checked = s.showToast !== false;
+          toggleMilestones.checked = s.showMilestones !== false;
           setPhoto(s.couplePhotoUrl || '');
         } catch (e) {
           console.warn('Settings nicht ladbar', e);
@@ -368,6 +480,7 @@
           gate.style.display = 'none';
           admin.style.display = 'block';
           await loadCurrent();
+          loadGallery();
         } catch (e) {
           showStatus(gateStatus, 'Server nicht erreichbar', 'err');
         }
@@ -450,6 +563,9 @@
           coupleNames: coupleEl.value.trim(),
           welcomeText: welcomeEl.value.trim(),
           couplePhotoUrl: currentPhotoUrl || '',
+          showHearts: toggleHearts.checked,
+          showToast: toggleToast.checked,
+          showMilestones: toggleMilestones.checked,
         };
 
         let bodyToSend = formBody;
@@ -465,6 +581,9 @@
                 coupleNames: formBody.coupleNames || curData.coupleNames || '',
                 welcomeText: formBody.welcomeText || curData.welcomeText || '',
                 couplePhotoUrl: formBody.couplePhotoUrl || curData.couplePhotoUrl || '',
+                showHearts: formBody.showHearts,
+                showToast: formBody.showToast,
+                showMilestones: formBody.showMilestones,
               };
             }
           } catch (e) {
@@ -486,6 +605,16 @@
         }
       }
 
+      // Toggles: sofort stumm speichern bei Änderung
+      [toggleHearts, toggleToast, toggleMilestones].forEach((el) => {
+        el.addEventListener('change', async () => {
+          try {
+            await saveSettings(true);
+            showStatus(saveStatus, 'Gespeichert', 'ok');
+          } catch (e) {}
+        });
+      });
+
       saveBtn.addEventListener('click', () => saveSettings(false));
 
       // ---- Statistik zurücksetzen ----
@@ -493,8 +622,8 @@
         if (!confirm('Statistik zurücksetzen?\n\nAlle Uploads VOR diesem Zeitpunkt werden in der Statistik nicht mehr gezählt. Die Fotos bleiben erhalten.')) return;
         const resetStatus = document.getElementById('resetStatus');
         try {
-          const res = await fetch('/api/stats-reset', {
-            method: 'POST',
+          const res = await fetch('/api/stats', {
+            method: 'DELETE',
             headers: { 'x-admin-password': password },
           });
           if (!res.ok) throw new Error('Status ' + res.status);
@@ -505,6 +634,72 @@
           showStatus(resetStatus, 'Fehler beim Zurücksetzen: ' + err.message, 'err');
         }
       });
+
+      // ---- Foto-Galerie mit Löschen ----
+      function escapeHtml(s) {
+        return String(s || '').replace(/[&<>"']/g, (c) =>
+          ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+      }
+
+      async function loadGallery() {
+        galleryEl.innerHTML = '<div class="gallery-empty">Lade Fotos…</div>';
+        galleryEmpty.style.display = 'none';
+        try {
+          const res = await fetch('/api/images', { cache: 'no-store' });
+          if (!res.ok) throw new Error('Status ' + res.status);
+          const data = await res.json();
+          const images = data.images || [];
+          galleryCount.textContent = images.length + ' Foto' + (images.length === 1 ? '' : 's');
+          if (images.length === 0) {
+            galleryEl.innerHTML = '';
+            galleryEmpty.style.display = 'block';
+            return;
+          }
+          galleryEmpty.style.display = 'none';
+          galleryEl.innerHTML = images.map((img) => {
+            const meta = img.name ? escapeHtml(img.name) : '';
+            return `
+              <div class="thumb" data-id="${escapeHtml(img.id)}">
+                <img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.name || '')}" loading="lazy" />
+                ${meta ? `<div class="meta">${meta}</div>` : ''}
+                <button class="del" title="Foto löschen" aria-label="Foto löschen">×</button>
+              </div>`;
+          }).join('');
+          galleryEl.querySelectorAll('.thumb').forEach((tile) => {
+            const id = tile.getAttribute('data-id');
+            tile.querySelector('.del').addEventListener('click', () => deletePhoto(id, tile));
+          });
+        } catch (err) {
+          galleryEl.innerHTML = '';
+          showStatus(galleryStatus, 'Konnte Galerie nicht laden: ' + err.message, 'err');
+        }
+      }
+
+      async function deletePhoto(publicId, tileEl) {
+        if (!confirm('Dieses Foto wirklich löschen?\n\nEs verschwindet auch aus der Slideshow.')) return;
+        tileEl.style.opacity = '0.4';
+        try {
+          const res = await fetch('/api/images', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
+            body: JSON.stringify({ publicId }),
+          });
+          if (!res.ok) {
+            const d = await res.json().catch(() => ({}));
+            throw new Error(d.error || 'Status ' + res.status);
+          }
+          tileEl.remove();
+          const remaining = galleryEl.querySelectorAll('.thumb').length;
+          galleryCount.textContent = remaining + ' Foto' + (remaining === 1 ? '' : 's');
+          if (remaining === 0) galleryEmpty.style.display = 'block';
+          showStatus(galleryStatus, 'Foto gelöscht', 'ok');
+        } catch (err) {
+          tileEl.style.opacity = '';
+          showStatus(galleryStatus, 'Löschen fehlgeschlagen: ' + err.message, 'err');
+        }
+      }
+
+      refreshGalleryBtn.addEventListener('click', loadGallery);
 
       // ---- Auto-Login falls Passwort im SessionStorage ----
       if (password) {
