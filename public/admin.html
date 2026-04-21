@@ -270,6 +270,16 @@
           </div>
         </div>
 
+        <!-- Statistik zurücksetzen -->
+        <div class="card">
+          <h2>Statistik zurücksetzen</h2>
+          <div class="hint">Setzt den Zähler zurück — Fotos bleiben erhalten, aber Uploads vor diesem Zeitpunkt werden in der Statistik nicht mehr mitgezählt. Nützlich um Test-Uploads vor der Hochzeit auszublenden.</div>
+          <div class="save-row">
+            <div class="status" id="resetStatus"></div>
+            <button class="btn secondary" id="resetStatsBtn">Statistik zurücksetzen</button>
+          </div>
+        </div>
+
         <div class="links">
           <a href="/" target="_blank">Upload-Seite ansehen</a>·
           <a href="/slideshow" target="_blank">Slideshow ansehen</a>·
@@ -477,6 +487,24 @@
       }
 
       saveBtn.addEventListener('click', () => saveSettings(false));
+
+      // ---- Statistik zurücksetzen ----
+      document.getElementById('resetStatsBtn').addEventListener('click', async () => {
+        if (!confirm('Statistik zurücksetzen?\n\nAlle Uploads VOR diesem Zeitpunkt werden in der Statistik nicht mehr gezählt. Die Fotos bleiben erhalten.')) return;
+        const resetStatus = document.getElementById('resetStatus');
+        try {
+          const res = await fetch('/api/stats-reset', {
+            method: 'POST',
+            headers: { 'x-admin-password': password },
+          });
+          if (!res.ok) throw new Error('Status ' + res.status);
+          const d = await res.json();
+          const ts = new Date(d.statsResetAt).toLocaleString('de-DE');
+          showStatus(resetStatus, 'Zurückgesetzt — Statistik zählt ab ' + ts, 'ok');
+        } catch (err) {
+          showStatus(resetStatus, 'Fehler beim Zurücksetzen: ' + err.message, 'err');
+        }
+      });
 
       // ---- Auto-Login falls Passwort im SessionStorage ----
       if (password) {

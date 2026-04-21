@@ -87,11 +87,13 @@ module.exports = async (req, res) => {
       }
 
       const { coupleNames = '', welcomeText = '', couplePhotoUrl = '' } = req.body || {};
+      const current = await loadSettings();
       const payload = {
         coupleNames: String(coupleNames).slice(0, 100),
         welcomeText: String(welcomeText).slice(0, 500),
         couplePhotoUrl: String(couplePhotoUrl).slice(0, 500),
         updatedAt: new Date().toISOString(),
+        ...(current.statsResetAt ? { statsResetAt: current.statsResetAt } : {}),
       };
 
       const uploadResult = await saveSettings(payload);

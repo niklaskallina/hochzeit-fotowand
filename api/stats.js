@@ -12,8 +12,29 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+async function loadStatsResetAt() {
+  try {
+    const SETTINGS_PUBLIC_ID = 'hochzeit-meta/settings';
+    const resource = await cloudinary.api.resource(SETTINGS_PUBLIC_ID, { resource_type: 'raw' });
+    const url = cloudinary.url(SETTINGS_PUBLIC_ID, {
+      resource_type: 'raw',
+      version: resource.version,
+      sign_url: false,
+    });
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const data = JSON.parse(await res.text());
+    return data.statsResetAt || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 module.exports = async (req, res) => {
   try {
+    const statsResetAt = await loadStatsResetAt();
+    const resetCutoff = statsResetAt ? new Date(statsResetAt) : null;
+
     let all = [];
     let next_cursor = undefined;
     // Cloudinary Search API liefert max. 500 Resultate pro Call
@@ -29,6 +50,11 @@ module.exports = async (req, res) => {
       all = all.concat(result.resources || []);
       next_cursor = result.next_cursor;
       if (!next_cursor) break;
+    }
+
+    // Bilder vor dem Reset-Zeitstempel ausblenden
+    if (resetCutoff) {
+      all = all.filter((r) => new Date(r.created_at) > resetCutoff);
     }
 
     // ---- Aggregation ----
