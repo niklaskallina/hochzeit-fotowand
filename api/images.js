@@ -18,7 +18,12 @@ module.exports = async (req, res) => {
       if (adminPw && req.headers['x-admin-password'] !== adminPw) {
         return res.status(401).json({ error: 'Falsches Admin-Passwort' });
       }
-      const { publicId } = req.body || {};
+      // publicId darf aus Query oder Body kommen — Body-Parsing auf DELETE
+      // ist bei manchen Proxies/Runtimes uneinheitlich, deshalb beides stützen.
+      const publicId =
+        (req.query && req.query.publicId) ||
+        (req.body && req.body.publicId) ||
+        null;
       if (!publicId || typeof publicId !== 'string' || !publicId.startsWith('hochzeit/')) {
         return res.status(400).json({ error: 'Ungültige publicId' });
       }

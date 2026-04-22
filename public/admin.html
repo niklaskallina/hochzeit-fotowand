@@ -261,6 +261,10 @@
       .thumb .dl  { top: 4px; right: 34px; background: rgba(40, 90, 150, 0.92); font-size: 13px; }
       .thumb:hover .del, .thumb:focus-within .del,
       .thumb:hover .dl,  .thumb:focus-within .dl { opacity: 1; }
+      /* Touch-Geräte (Handy/Tablet): kein Hover → Buttons dauerhaft sichtbar */
+      @media (hover: none) {
+        .thumb .del, .thumb .dl, .thumb .pick { opacity: 1; }
+      }
       .thumb .pick {
         position: absolute; top: 4px; left: 4px;
         width: 22px; height: 22px; border-radius: 6px;
@@ -817,10 +821,9 @@
         if (!confirm('Dieses Foto wirklich löschen?\n\nEs verschwindet auch aus der Slideshow.')) return;
         tileEl.style.opacity = '0.4';
         try {
-          const res = await fetch('/api/images', {
+          const res = await fetch('/api/images?publicId=' + encodeURIComponent(publicId), {
             method: 'DELETE',
-            headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
-            body: JSON.stringify({ publicId }),
+            headers: { 'x-admin-password': password },
           });
           if (!res.ok) {
             const d = await res.json().catch(() => ({}));
