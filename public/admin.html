@@ -729,7 +729,10 @@
           }).join('');
           galleryEl.querySelectorAll('.thumb').forEach((tile) => {
             const id = tile.getAttribute('data-id');
-            tile.querySelector('.del').addEventListener('click', (e) => {
+            const delBtn = tile.querySelector('.del');
+            console.log('[admin] wiring delete button for', id, 'exists:', !!delBtn);
+            delBtn.addEventListener('click', (e) => {
+              console.log('[admin] × clicked for', id);
               e.preventDefault(); e.stopPropagation();
               deletePhoto(id, tile);
             });
@@ -818,17 +821,27 @@
       });
 
       async function deletePhoto(publicId, tileEl) {
-        if (!confirm('Dieses Foto wirklich löschen?\n\nEs verschwindet auch aus der Slideshow.')) return;
+        console.log('[admin] deletePhoto called for:', publicId);
+        if (!confirm('Dieses Foto wirklich löschen?\n\nEs verschwindet auch aus der Slideshow.')) {
+          console.log('[admin] delete aborted by user');
+          return;
+        }
         tileEl.style.opacity = '0.4';
         try {
-          const res = await fetch('/api/images?publicId=' + encodeURIComponent(publicId), {
+          const url = '/api/images?publicId=' + encodeURIComponent(publicId);
+          console.log('[admin] DELETE', url);
+          const res = await fetch(url, {
             method: 'DELETE',
             headers: { 'x-admin-password': password },
           });
+          console.log('[admin] delete status:', res.status);
           if (!res.ok) {
             const d = await res.json().catch(() => ({}));
+            console.error('[admin] delete error response:', d);
             throw new Error(d.error || 'Status ' + res.status);
           }
+          const d = await res.json();
+          console.log('[admin] delete ok:', d);
           selected.delete(publicId);
           tileEl.remove();
           const remaining = galleryEl.querySelectorAll('.thumb').length;
@@ -842,6 +855,7 @@
           updateSelectionUI();
           showStatus(galleryStatus, 'Foto gelöscht', 'ok');
         } catch (err) {
+          console.error('[admin] delete exception:', err);
           tileEl.style.opacity = '';
           showStatus(galleryStatus, 'Löschen fehlgeschlagen: ' + err.message, 'err');
         }
