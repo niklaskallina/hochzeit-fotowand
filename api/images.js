@@ -48,7 +48,7 @@ module.exports = async (req, res) => {
       const images = (result.resources || []).map((r) => ({
         id: r.public_id,
         url: cloudinary.url(r.public_id, {
-          quality: 'auto',
+          quality: 'auto:eco',
           fetch_format: 'auto',
           width: 1920,
           height: 1920,
