@@ -626,13 +626,6 @@
             playlist = playlist.filter((p) => !newIds.has(p.id));
             playlist = [...newOnes, ...playlist];
             newOnes.forEach((i) => shownIds.delete(i.id));
-
-            // Aktuelles Bild bald beenden, damit das neue Foto fast sofort kommt.
-            // Höchstens 2 Sekunden warten — egal wie lang die normale Anzeigedauer ist.
-            if (current && advanceTimer) {
-              clearTimeout(advanceTimer);
-              advanceTimer = setTimeout(next, 2000);
-            }
           }
 
           // Live-Feier nur nach dem initialen Laden (sonst feiert man bei jedem Reload alle Bilder)
@@ -669,20 +662,16 @@
           playlist = [];
           return;
         }
+        // Ungezeigte zuerst, dann Rest
         let pool = images.slice();
         if (settings.random) {
-          // Fisher-Yates: gleichmäßige Verteilung, unbiased
-          for (let i = pool.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [pool[i], pool[j]] = [pool[j], pool[i]];
-          }
+          pool = pool
+            .map((v) => [Math.random(), v])
+            .sort((a, b) => a[0] - b[0])
+            .map(([, v]) => v);
         } else {
           // Chronologisch (älteste zuerst — so erzählt sich der Tag)
           pool.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-        }
-        // Verhindern, dass das gerade gezeigte Bild direkt nochmal kommt
-        if (current && pool.length > 1 && pool[0].id === current.id) {
-          [pool[0], pool[1]] = [pool[1], pool[0]];
         }
         playlist = pool;
         shownIds = new Set();
