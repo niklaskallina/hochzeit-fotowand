@@ -93,9 +93,14 @@ module.exports = async (req, res) => {
         showHearts,
         showToast,
         showMilestones,
+        slideshowQuality,
+        uploadCompression,
       } = req.body || {};
       const current = await loadSettings();
       const asBool = (v, fallback) => (typeof v === 'boolean' ? v : fallback);
+      const SLIDESHOW_QUALITIES = ['auto:best', 'auto:good', 'auto:eco', 'auto:low'];
+      const UPLOAD_COMPRESSIONS = ['original', 'high', 'medium', 'low'];
+      const oneOf = (v, list, fallback) => (list.includes(v) ? v : fallback);
       const payload = {
         coupleNames: String(coupleNames).slice(0, 100),
         welcomeText: String(welcomeText).slice(0, 500),
@@ -103,6 +108,8 @@ module.exports = async (req, res) => {
         showHearts: asBool(showHearts, current.showHearts !== false),
         showToast: asBool(showToast, current.showToast !== false),
         showMilestones: asBool(showMilestones, current.showMilestones !== false),
+        slideshowQuality: oneOf(slideshowQuality, SLIDESHOW_QUALITIES, current.slideshowQuality || 'auto:eco'),
+        uploadCompression: oneOf(uploadCompression, UPLOAD_COMPRESSIONS, current.uploadCompression || 'original'),
         updatedAt: new Date().toISOString(),
         ...(current.statsResetAt ? { statsResetAt: current.statsResetAt } : {}),
       };

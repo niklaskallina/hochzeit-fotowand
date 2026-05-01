@@ -757,6 +757,7 @@
         fd.append('signature', sig.signature);
         fd.append('folder', sig.folder);
         fd.append('context', sig.context);
+        if (sig.transformation) fd.append('transformation', sig.transformation);
 
         return new Promise((resolve, reject) => {
           const xhr = new XMLHttpRequest();

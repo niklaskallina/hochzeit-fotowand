@@ -11,6 +11,28 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+const SETTINGS_PUBLIC_ID = 'hochzeit-meta/settings';
+const VALID_QUALITIES = new Set(['auto:best', 'auto:good', 'auto:eco', 'auto:low']);
+
+let qualityCache = null;
+let qualityCacheUntil = 0;
+async function getSlideshowQuality() {
+  const now = Date.now();
+  if (qualityCache && now < qualityCacheUntil) return qualityCache;
+  try {
+    const resource = await cloudinary.api.resource(SETTINGS_PUBLIC_ID, { resource_type: 'raw' });
+    const url = cloudinary.url(SETTINGS_PUBLIC_ID, { resource_type: 'raw', version: resource.version, sign_url: false });
+    const r = await fetch(url, { cache: 'no-store' });
+    if (!r.ok) throw new Error('settings fetch ' + r.status);
+    const s = JSON.parse(await r.text());
+    qualityCache = VALID_QUALITIES.has(s.slideshowQuality) ? s.slideshowQuality : 'auto:eco';
+    qualityCacheUntil = now + 30_000;
+    return qualityCache;
+  } catch (e) {
+    return 'auto:eco';
+  }
+}
+
 module.exports = async (req, res) => {
   try {
     if (req.method === 'DELETE') {
@@ -38,17 +60,20 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === 'GET') {
-      const result = await cloudinary.search
-        .expression('folder:hochzeit AND resource_type:image')
-        .sort_by('created_at', 'desc')
-        .with_field('context')
-        .max_results(200)
-        .execute();
+      const [result, slideshowQuality] = await Promise.all([
+        cloudinary.search
+          .expression('folder:hochzeit AND resource_type:image')
+          .sort_by('created_at', 'desc')
+          .with_field('context')
+          .max_results(200)
+          .execute(),
+        getSlideshowQuality(),
+      ]);
 
       const images = (result.resources || []).map((r) => ({
         id: r.public_id,
         url: cloudinary.url(r.public_id, {
-          quality: 'auto:eco',
+          quality: slideshowQuality,
           fetch_format: 'auto',
           width: 1920,
           height: 1920,

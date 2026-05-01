@@ -12,6 +12,41 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+const SETTINGS_PUBLIC_ID = 'hochzeit-meta/settings';
+
+// Vor jedem Upload kurz checken, was der Admin als Upload-Kompression eingestellt hat.
+// Mit kleinem In-Memory-Cache (60s), damit nicht jeder Upload-Request einen extra
+// Cloudinary-Resource-Call kostet.
+let settingsCache = null;
+let settingsCacheUntil = 0;
+async function getUploadCompression() {
+  const now = Date.now();
+  if (settingsCache && now < settingsCacheUntil) return settingsCache.uploadCompression || 'original';
+  try {
+    const resource = await cloudinary.api.resource(SETTINGS_PUBLIC_ID, { resource_type: 'raw' });
+    const url = cloudinary.url(SETTINGS_PUBLIC_ID, { resource_type: 'raw', version: resource.version, sign_url: false });
+    const r = await fetch(url, { cache: 'no-store' });
+    if (!r.ok) return 'original';
+    settingsCache = JSON.parse(await r.text());
+    settingsCacheUntil = now + 60_000;
+    return settingsCache.uploadCompression || 'original';
+  } catch (e) {
+    return 'original';
+  }
+}
+
+// Cloudinary-Transformation-String je nach Profil. `transformation` auf Upload ist
+// destruktiv — das Original wird durch die transformierte Version ersetzt.
+function uploadTransformationFor(profile) {
+  switch (profile) {
+    case 'high':   return 'c_limit,w_3000,h_3000,q_auto:good';
+    case 'medium': return 'c_limit,w_2400,h_2400,q_auto:good';
+    case 'low':    return 'c_limit,w_2000,h_2000,q_auto:eco';
+    case 'original':
+    default:       return null; // kein transform → Original bleibt unverändert
+  }
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -59,11 +94,15 @@ module.exports = async (req, res) => {
     const safeMessage = String(message).replace(/[|=]/g, ' ').slice(0, 200);
     const context = `caption=${safeMessage}|alt=${safeName}`;
 
+    const compression = await getUploadCompression();
+    const transformation = uploadTransformationFor(compression);
+
     const paramsToSign = {
       timestamp,
       folder,
       context,
     };
+    if (transformation) paramsToSign.transformation = transformation;
 
     const signature = cloudinary.utils.api_sign_request(
       paramsToSign,
@@ -76,6 +115,7 @@ module.exports = async (req, res) => {
       timestamp,
       folder,
       context,
+      ...(transformation ? { transformation } : {}),
       apiKey: process.env.CLOUDINARY_API_KEY,
       cloudName: process.env.CLOUDINARY_CLOUD_NAME,
     });

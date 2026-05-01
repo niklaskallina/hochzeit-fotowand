@@ -74,7 +74,7 @@
         font-weight: 500;
         margin-bottom: 6px;
       }
-      input[type='text'], input[type='password'], textarea {
+      input[type='text'], input[type='password'], textarea, select {
         width: 100%;
         background: #fffdf7;
         border: 1px solid var(--line);
@@ -84,7 +84,8 @@
         font-size: 15px;
         color: var(--ink);
       }
-      input:focus, textarea:focus {
+      select { cursor: pointer; }
+      input:focus, textarea:focus, select:focus {
         outline: none;
         border-color: var(--accent);
         box-shadow: 0 0 0 3px rgba(138, 106, 59, 0.15);
@@ -383,6 +384,33 @@
           </div>
         </div>
 
+        <!-- Bild-Qualität -->
+        <div class="card">
+          <h2>Bild-Qualität</h2>
+          <div class="hint">Steuert Speicherverbrauch (Cloudinary-Free hat 25 GB) und Bandbreite. Änderungen greifen für neue Uploads bzw. den nächsten Reload der Slideshow.</div>
+
+          <div class="field">
+            <label class="lbl" for="slideshowQuality">Anzeige-Qualität (Slideshow)</label>
+            <select id="slideshowQuality">
+              <option value="auto:best">Beste — höchste Detailtiefe, ~1,5 MB pro Foto</option>
+              <option value="auto:good">Standard — ausgewogen, ~1 MB</option>
+              <option value="auto:eco" selected>Sparsam — empfohlen, ~600 KB</option>
+              <option value="auto:low">Niedrig — sichtbar reduziert, ~300 KB</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="lbl" for="uploadCompression">Upload-Komprimierung (gespeicherte Originale)</label>
+            <select id="uploadCompression">
+              <option value="original" selected>Original behalten — wie hochgeladen, viel Speicher</option>
+              <option value="high">Hoch — max 3000 px, leicht komprimiert (~2–3 MB)</option>
+              <option value="medium">Mittel — max 2400 px, optimiert (~1,5–2 MB)</option>
+              <option value="low">Sparsam — max 2000 px, klein (~1 MB)</option>
+            </select>
+            <div class="hint" style="margin-top:6px">⚠️ Achtung: Upload-Komprimierung ist <b>destruktiv</b> — Cloudinary speichert nur die komprimierte Version, das Original ist nicht mehr abrufbar. Bereits hochgeladene Bilder bleiben unverändert.</div>
+          </div>
+        </div>
+
         <!-- Statistik zurücksetzen -->
         <div class="card">
           <h2>Statistik zurücksetzen</h2>
@@ -445,6 +473,8 @@
       const toggleHearts = document.getElementById('toggleHearts');
       const toggleToast = document.getElementById('toggleToast');
       const toggleMilestones = document.getElementById('toggleMilestones');
+      const slideshowQualityEl = document.getElementById('slideshowQuality');
+      const uploadCompressionEl = document.getElementById('uploadCompression');
       const galleryEl = document.getElementById('gallery');
       const galleryEmpty = document.getElementById('galleryEmpty');
       const galleryCount = document.getElementById('galleryCount');
@@ -484,6 +514,8 @@
           toggleHearts.checked = s.showHearts !== false;
           toggleToast.checked = s.showToast !== false;
           toggleMilestones.checked = s.showMilestones !== false;
+          if (s.slideshowQuality) slideshowQualityEl.value = s.slideshowQuality;
+          if (s.uploadCompression) uploadCompressionEl.value = s.uploadCompression;
           setPhoto(s.couplePhotoUrl || '');
         } catch (e) {
           console.warn('Settings nicht ladbar', e);
@@ -601,6 +633,8 @@
           showHearts: toggleHearts.checked,
           showToast: toggleToast.checked,
           showMilestones: toggleMilestones.checked,
+          slideshowQuality: slideshowQualityEl.value,
+          uploadCompression: uploadCompressionEl.value,
         };
 
         let bodyToSend = formBody;
@@ -619,6 +653,8 @@
                 showHearts: formBody.showHearts,
                 showToast: formBody.showToast,
                 showMilestones: formBody.showMilestones,
+                slideshowQuality: formBody.slideshowQuality,
+                uploadCompression: formBody.uploadCompression,
               };
             }
           } catch (e) {
@@ -640,8 +676,8 @@
         }
       }
 
-      // Toggles: sofort stumm speichern bei Änderung
-      [toggleHearts, toggleToast, toggleMilestones].forEach((el) => {
+      // Toggles + Qualitäts-Selects: sofort stumm speichern bei Änderung
+      [toggleHearts, toggleToast, toggleMilestones, slideshowQualityEl, uploadCompressionEl].forEach((el) => {
         el.addEventListener('change', async () => {
           try {
             await saveSettings(true);
