@@ -301,7 +301,7 @@
   <body>
     <div class="wrap">
       <div class="header">
-        <h1>Fotowand · Admin <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:1px;vertical-align:middle">v2 · DL+DEL</span></h1>
+        <h1>Fotowand · Admin <span style="font-size:10px;font-weight:400;color:#888;letter-spacing:1px;vertical-align:middle">v3 · Bild-Qualität</span></h1>
         <p>Brautpaar-Bild und Begrüßungstext für die Upload-Seite festlegen</p>
       </div>
 
@@ -514,8 +514,8 @@
           toggleHearts.checked = s.showHearts !== false;
           toggleToast.checked = s.showToast !== false;
           toggleMilestones.checked = s.showMilestones !== false;
-          if (s.slideshowQuality) slideshowQualityEl.value = s.slideshowQuality;
-          if (s.uploadCompression) uploadCompressionEl.value = s.uploadCompression;
+          if (slideshowQualityEl && s.slideshowQuality) slideshowQualityEl.value = s.slideshowQuality;
+          if (uploadCompressionEl && s.uploadCompression) uploadCompressionEl.value = s.uploadCompression;
           setPhoto(s.couplePhotoUrl || '');
         } catch (e) {
           console.warn('Settings nicht ladbar', e);
@@ -633,8 +633,8 @@
           showHearts: toggleHearts.checked,
           showToast: toggleToast.checked,
           showMilestones: toggleMilestones.checked,
-          slideshowQuality: slideshowQualityEl.value,
-          uploadCompression: uploadCompressionEl.value,
+          ...(slideshowQualityEl ? { slideshowQuality: slideshowQualityEl.value } : {}),
+          ...(uploadCompressionEl ? { uploadCompression: uploadCompressionEl.value } : {}),
         };
 
         let bodyToSend = formBody;
@@ -677,14 +677,18 @@
       }
 
       // Toggles + Qualitäts-Selects: sofort stumm speichern bei Änderung
-      [toggleHearts, toggleToast, toggleMilestones, slideshowQualityEl, uploadCompressionEl].forEach((el) => {
-        el.addEventListener('change', async () => {
-          try {
-            await saveSettings(true);
-            showStatus(saveStatus, 'Gespeichert', 'ok');
-          } catch (e) {}
+      // Defensive: nur Elemente hinzufügen, die wirklich existieren — verhindert,
+      // dass ein versehentlich entferntes Feld die ganze Admin-Seite crasht.
+      [toggleHearts, toggleToast, toggleMilestones, slideshowQualityEl, uploadCompressionEl]
+        .filter((el) => el != null)
+        .forEach((el) => {
+          el.addEventListener('change', async () => {
+            try {
+              await saveSettings(true);
+              showStatus(saveStatus, 'Gespeichert', 'ok');
+            } catch (e) {}
+          });
         });
-      });
 
       saveBtn.addEventListener('click', () => saveSettings(false));
 
