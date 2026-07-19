@@ -800,6 +800,31 @@
         }
       });
 
+      // ---- Bildschirm wachhalten (verhindert Ruhezustand bei Fire TV Stick / Amazon Silk / Smart TV)
+      // Screen Wake Lock API: sagt dem Betriebssystem, dass der Bildschirm an bleiben soll.
+      // Wird bei Tab-Wechsel automatisch freigegeben — wir holen den Lock beim Zurückkommen neu.
+      let wakeLock = null;
+      async function acquireWakeLock() {
+        if (!('wakeLock' in navigator)) return; // API nicht unterstützt (älterer Browser)
+        try {
+          wakeLock = await navigator.wakeLock.request('screen');
+          wakeLock.addEventListener('release', () => { wakeLock = null; });
+        } catch (e) {
+          // z.B. Batterie zu niedrig oder Berechtigung verweigert — kein Problem, wird beim nächsten Versuch erneut probiert
+        }
+      }
+      // Erneut holen, sobald die Seite wieder sichtbar wird
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && wakeLock === null) acquireWakeLock();
+      });
+      // Fallback: Sicherheitshalber alle 30 Sek. prüfen, ob der Lock noch aktiv ist
+      setInterval(() => {
+        if (wakeLock === null && document.visibilityState === 'visible') acquireWakeLock();
+      }, 30000);
+      // Erstes Holen beim Laden — braucht bei manchen Browsern eine User-Interaktion,
+      // aber bei Fire TV / TV-Browsern klappt es meist direkt.
+      acquireWakeLock();
+
       // ---- Start: Server-Settings einmalig laden, dann alle 8 Sek. nach neuen Bildern suchen
       loadServerSettings().then(fetchImages);
       setInterval(fetchImages, 8000);
