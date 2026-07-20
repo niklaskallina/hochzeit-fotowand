@@ -990,6 +990,17 @@
             w.textContent = s.welcomeText;
             w.classList.remove('default');
           }
+
+          // Galerie-Feature vom Admin steuerbar. Default: aktiv (bei alten
+          // Settings-Objekten ohne das Feld). false → Tab-Bar komplett weg,
+          // Upload-Ansicht bleibt allein sichtbar.
+          if (s.showGuestGallery === false) {
+            const tabs = document.querySelector('.tabs');
+            if (tabs) tabs.style.display = 'none';
+            const pg = document.getElementById('paneGallery');
+            if (pg) pg.hidden = true;
+            window.__guestGalleryDisabled = true;
+          }
         } catch (e) {
           // Falls Einstellungen nicht erreichbar → Defaults anzeigen
           console.warn('Event-Einstellungen nicht ladbar', e);
@@ -1399,6 +1410,8 @@
 
       // --- "Neue Fotos"-Punkt am Tab: prüft im Hintergrund, ob was Neues da ist ---
       async function checkForNew() {
+        // Vom Admin deaktiviert → gar nicht erst pollen (spart Cloudinary-Calls)
+        if (window.__guestGalleryDisabled) return;
         try {
           const res = await fetch('/api/images', { cache: 'no-store' });
           if (!res.ok) return;
@@ -1415,7 +1428,8 @@
           }
         } catch (e) {}
       }
-      checkForNew();
+      // Etwas verzögern, damit die Setting-Fetch-Antwort schon da ist
+      setTimeout(checkForNew, 1500);
       // alle 20 Sek prüfen — schont Rate-Limit
       setInterval(checkForNew, 20000);
     </script>

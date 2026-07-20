@@ -95,6 +95,7 @@ module.exports = async (req, res) => {
         showMilestones,
         slideshowQuality,
         uploadCompression,
+        showGuestGallery,
       } = req.body || {};
       const current = await loadSettings();
       const asBool = (v, fallback) => (typeof v === 'boolean' ? v : fallback);
@@ -110,6 +111,7 @@ module.exports = async (req, res) => {
         showMilestones: asBool(showMilestones, current.showMilestones !== false),
         slideshowQuality: oneOf(slideshowQuality, SLIDESHOW_QUALITIES, current.slideshowQuality || 'auto:eco'),
         uploadCompression: oneOf(uploadCompression, UPLOAD_COMPRESSIONS, current.uploadCompression || 'original'),
+        showGuestGallery: asBool(showGuestGallery, current.showGuestGallery !== false),
         updatedAt: new Date().toISOString(),
         ...(current.statsResetAt ? { statsResetAt: current.statsResetAt } : {}),
       };

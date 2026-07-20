@@ -387,6 +387,20 @@
           </div>
         </div>
 
+        <!-- Gäste-Upload-Seite -->
+        <div class="card">
+          <h2>Gäste-Upload-Seite</h2>
+          <div class="hint">Steuert, was Gäste auf der Upload-Seite (die per QR-Code aufgerufen wird) zusätzlich zum Hochladen sehen.</div>
+
+          <div class="toggle-row">
+            <div>
+              <div class="tlabel">Alle Fotos ansehen &amp; herunterladen</div>
+              <div class="thint">Zweiter Tab „Alle Fotos" — Gäste können sehen, was andere hochgeladen haben, einzeln oder als ZIP herunterladen. Aus: nur Upload-Ansicht.</div>
+            </div>
+            <input id="toggleGuestGallery" type="checkbox" checked />
+          </div>
+        </div>
+
         <!-- Bild-Qualität -->
         <div class="card">
           <h2>Bild-Qualität</h2>
@@ -476,6 +490,7 @@
       const toggleHearts = document.getElementById('toggleHearts');
       const toggleToast = document.getElementById('toggleToast');
       const toggleMilestones = document.getElementById('toggleMilestones');
+      const toggleGuestGallery = document.getElementById('toggleGuestGallery');
       const slideshowQualityEl = document.getElementById('slideshowQuality');
       const uploadCompressionEl = document.getElementById('uploadCompression');
       const galleryEl = document.getElementById('gallery');
@@ -517,6 +532,7 @@
           toggleHearts.checked = s.showHearts !== false;
           toggleToast.checked = s.showToast !== false;
           toggleMilestones.checked = s.showMilestones !== false;
+          if (toggleGuestGallery) toggleGuestGallery.checked = s.showGuestGallery !== false;
           if (slideshowQualityEl && s.slideshowQuality) slideshowQualityEl.value = s.slideshowQuality;
           if (uploadCompressionEl && s.uploadCompression) uploadCompressionEl.value = s.uploadCompression;
           setPhoto(s.couplePhotoUrl || '');
@@ -636,6 +652,7 @@
           showHearts: toggleHearts.checked,
           showToast: toggleToast.checked,
           showMilestones: toggleMilestones.checked,
+          ...(toggleGuestGallery ? { showGuestGallery: toggleGuestGallery.checked } : {}),
           ...(slideshowQualityEl ? { slideshowQuality: slideshowQualityEl.value } : {}),
           ...(uploadCompressionEl ? { uploadCompression: uploadCompressionEl.value } : {}),
         };
@@ -656,6 +673,7 @@
                 showHearts: formBody.showHearts,
                 showToast: formBody.showToast,
                 showMilestones: formBody.showMilestones,
+                showGuestGallery: formBody.showGuestGallery,
                 slideshowQuality: formBody.slideshowQuality,
                 uploadCompression: formBody.uploadCompression,
               };
@@ -682,7 +700,7 @@
       // Toggles + Qualitäts-Selects: sofort stumm speichern bei Änderung
       // Defensive: nur Elemente hinzufügen, die wirklich existieren — verhindert,
       // dass ein versehentlich entferntes Feld die ganze Admin-Seite crasht.
-      [toggleHearts, toggleToast, toggleMilestones, slideshowQualityEl, uploadCompressionEl]
+      [toggleHearts, toggleToast, toggleMilestones, toggleGuestGallery, slideshowQualityEl, uploadCompressionEl]
         .filter((el) => el != null)
         .forEach((el) => {
           el.addEventListener('change', async () => {
