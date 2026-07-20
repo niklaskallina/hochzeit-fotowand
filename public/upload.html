@@ -313,6 +313,290 @@
       .challenge .refresh:hover { opacity: 1; }
       .challenge .refresh.spin { transform: rotate(360deg); }
 
+      /* ---- Tab-Wechsler (Hochladen / Alle Fotos) ---- */
+      .tabs {
+        display: flex;
+        background: var(--bg-2);
+        padding: 4px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        border: 1px solid var(--line);
+      }
+      .tab {
+        flex: 1;
+        text-align: center;
+        padding: 10px 8px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--ink-soft);
+        border-radius: 9px;
+        letter-spacing: 0.2px;
+        cursor: pointer;
+        border: none;
+        background: none;
+        font-family: inherit;
+        transition: color .15s;
+      }
+      .tab.active {
+        background: #fdfaf4;
+        color: var(--accent-deep);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.06), 0 0 0 1px var(--line);
+      }
+      .tab .dot {
+        display: none;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+        margin-left: 6px;
+        vertical-align: middle;
+        transform: translateY(-1px);
+      }
+      .tab.has-new:not(.active) .dot { display: inline-block; }
+
+      .pane[hidden] { display: none !important; }
+
+      /* ---- Galerie ---- */
+      .gallery-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 12px;
+        padding: 0 2px;
+      }
+      .gallery-bar .count .n {
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic;
+        font-size: 22px;
+        color: var(--accent-deep);
+        margin-right: 6px;
+      }
+      .gallery-bar .count .lbl {
+        font-size: 11px;
+        color: var(--ink-soft);
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+      }
+      .toolbar-btn {
+        background: none;
+        border: none;
+        color: var(--accent);
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        cursor: pointer;
+        font-family: inherit;
+        border-radius: 6px;
+      }
+      .toolbar-btn:active { background: var(--bg-2); }
+      .toolbar-btn.cancel { color: var(--accent-deep); opacity: 0.75; }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+      }
+      @media (min-width: 480px) {
+        .grid { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+      }
+      .thumb {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--bg-2);
+        cursor: pointer;
+        transition: transform .15s;
+      }
+      .thumb:active { transform: scale(0.97); }
+      .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .thumb .dl {
+        position: absolute;
+        top: 4px; right: 4px;
+        width: 28px; height: 28px;
+        border-radius: 50%;
+        background: rgba(20,15,10,0.55);
+        color: white;
+        display: grid;
+        place-items: center;
+        font-size: 14px;
+        text-decoration: none;
+        z-index: 2;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+      }
+      .thumb .pick {
+        position: absolute;
+        top: 4px; left: 4px;
+        width: 24px; height: 24px;
+        border-radius: 6px;
+        background: rgba(255,255,255,0.9);
+        display: none;
+        place-items: center;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--accent);
+        line-height: 1;
+        z-index: 2;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+      }
+      .grid.select-mode .thumb .pick { display: grid; }
+      .grid.select-mode .thumb .dl { display: none; }
+      .thumb.selected { outline: 2px solid var(--accent); outline-offset: -2px; }
+      .thumb.selected::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: rgba(138,106,59,0.2);
+        z-index: 1;
+      }
+      .thumb.selected .pick { background: var(--accent); color: white; }
+      .thumb .name {
+        position: absolute;
+        left: 0; right: 0; bottom: 0;
+        padding: 14px 6px 4px;
+        font-size: 10px;
+        color: white;
+        background: linear-gradient(transparent, rgba(0,0,0,0.7));
+        line-height: 1.2;
+        z-index: 2;
+        pointer-events: none;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .gallery-empty, .gallery-loading {
+        text-align: center;
+        padding: 50px 20px;
+        color: var(--ink-soft);
+        font-size: 13px;
+      }
+      .gallery-empty .big {
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic;
+        font-size: 22px;
+        color: var(--accent);
+        margin-bottom: 6px;
+      }
+
+      /* ---- Schwebende Download-Bar (nur im Auswahlmodus mit >0 markiert) ---- */
+      .action-bar {
+        position: fixed;
+        left: 0; right: 0; bottom: 0;
+        background: var(--accent-deep);
+        color: #fdfaf4;
+        padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 -6px 20px rgba(0,0,0,0.2);
+        z-index: 100;
+        transform: translateY(120%);
+        transition: transform .25s ease-out;
+      }
+      .action-bar.show { transform: translateY(0); }
+      .ab-count strong {
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic;
+        font-weight: 500;
+        font-size: 22px;
+        line-height: 1;
+        display: block;
+      }
+      .ab-count span {
+        font-size: 10px;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        opacity: 0.75;
+        display: block;
+        margin-top: 4px;
+      }
+      .ab-go {
+        background: #fdfaf4;
+        color: var(--accent-deep);
+        border: none;
+        border-radius: 8px;
+        padding: 12px 18px;
+        font-size: 14px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .ab-go:disabled { opacity: 0.5; cursor: not-allowed; }
+      .ab-go::before { content: "↓"; font-size: 16px; font-weight: 700; }
+
+      /* ---- Lightbox (Vollbild-Ansicht) ---- */
+      .lightbox {
+        position: fixed;
+        inset: 0;
+        background: rgba(20, 15, 10, 0.94);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 200;
+        padding: 20px;
+      }
+      .lightbox.show { display: flex; }
+      .lightbox img {
+        max-width: 100%;
+        max-height: 82vh;
+        object-fit: contain;
+        border-radius: 4px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      }
+      .lb-close {
+        position: absolute;
+        top: calc(16px + env(safe-area-inset-top));
+        right: 16px;
+        width: 42px; height: 42px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.15);
+        color: white;
+        border: none;
+        font-size: 24px;
+        line-height: 1;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+      }
+      .lb-dl {
+        position: absolute;
+        bottom: calc(24px + env(safe-area-inset-bottom));
+        left: 50%;
+        transform: translateX(-50%);
+        background: white;
+        color: var(--accent-deep);
+        text-decoration: none;
+        padding: 12px 20px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      }
+      .lb-dl::before { content: "↓"; font-weight: 700; }
+      .lb-caption {
+        position: absolute;
+        top: calc(20px + env(safe-area-inset-top));
+        left: 20px;
+        right: 74px;
+        color: rgba(255,255,255,0.85);
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic;
+        font-size: 15px;
+        line-height: 1.3;
+      }
+
       /* ---- Herz-Konfetti auf Success ---- */
       .hearts-burst {
         position: fixed;
@@ -371,6 +655,12 @@
         <p class="welcome default" id="welcome">Teilt eure schönsten Bilder von heute — sie erscheinen direkt auf unserer Fotowand.</p>
       </header>
 
+      <div class="tabs" role="tablist" aria-label="Bereich wechseln">
+        <button class="tab active" id="tabUpload" role="tab" aria-selected="true" type="button">Hochladen</button>
+        <button class="tab" id="tabGallery" role="tab" aria-selected="false" type="button">Alle Fotos<span class="dot" aria-hidden="true"></span></button>
+      </div>
+
+      <div class="pane" id="paneUpload">
       <div class="challenge" id="challenge">
         <div class="emoji" id="challengeEmoji">📸</div>
         <div class="text">
@@ -424,9 +714,38 @@
           <a href="/stats" style="color: var(--accent-deep); text-decoration: none;">Statistik ansehen ›</a>
         </div>
       </div>
+      </div><!-- /paneUpload -->
+
+      <div class="pane" id="paneGallery" hidden>
+        <div class="gallery-bar">
+          <div class="count">
+            <span class="n" id="galleryCount">–</span>
+            <span class="lbl" id="galleryLabel">Fotos · neueste zuerst</span>
+          </div>
+          <button class="toolbar-btn" id="selectToggle" type="button">Auswählen</button>
+        </div>
+        <div class="grid" id="galleryGrid"></div>
+        <div class="gallery-loading" id="galleryLoading">Lade Fotos…</div>
+        <div class="gallery-empty" id="galleryEmpty" hidden>
+          <div class="big">Noch nichts hier</div>
+          <div>Sobald Fotos hochgeladen sind, erscheinen sie hier.</div>
+        </div>
+      </div>
     </div>
 
     <div class="hearts-burst" id="heartsBurst" aria-hidden="true"></div>
+
+    <div class="action-bar" id="actionBar" aria-hidden="true">
+      <div class="ab-count"><strong id="abCount">0</strong><span>ausgewählt</span></div>
+      <button class="ab-go" id="downloadZipBtn" type="button">Als ZIP laden</button>
+    </div>
+
+    <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="lb-caption" id="lbCaption"></div>
+      <button class="lb-close" id="lbClose" type="button" aria-label="Schließen">×</button>
+      <img id="lbImg" alt="" />
+      <a class="lb-dl" id="lbDl" download>Herunterladen</a>
+    </div>
 
     <script>
       // ---------- Foto-Challenges: wechseln bei Klick auf ↻ ----------
@@ -844,6 +1163,261 @@
         challengeIdx = (challengeIdx + 1 + Math.floor(Math.random() * 3)) % CHALLENGES.length;
         showChallenge();
       });
+
+      // =====================================================================
+      // Galerie: alle Fotos ansehen + herunterladen (einzeln oder als ZIP)
+      // =====================================================================
+      const tabUpload = document.getElementById('tabUpload');
+      const tabGallery = document.getElementById('tabGallery');
+      const paneUpload = document.getElementById('paneUpload');
+      const paneGallery = document.getElementById('paneGallery');
+      const galleryGrid = document.getElementById('galleryGrid');
+      const galleryCount = document.getElementById('galleryCount');
+      const galleryLabel = document.getElementById('galleryLabel');
+      const galleryLoading = document.getElementById('galleryLoading');
+      const galleryEmpty = document.getElementById('galleryEmpty');
+      const selectToggle = document.getElementById('selectToggle');
+      const actionBar = document.getElementById('actionBar');
+      const abCount = document.getElementById('abCount');
+      const downloadZipBtn = document.getElementById('downloadZipBtn');
+      const lightbox = document.getElementById('lightbox');
+      const lbImg = document.getElementById('lbImg');
+      const lbClose = document.getElementById('lbClose');
+      const lbDl = document.getElementById('lbDl');
+      const lbCaption = document.getElementById('lbCaption');
+
+      let galleryImages = [];
+      const selectedIds = new Set();
+      let selectMode = false;
+      const LAST_SEEN_KEY = 'gallery-last-seen';
+
+      function escapeHtml(s) {
+        return String(s || '').replace(/[&<>"']/g, (c) =>
+          ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      }
+
+      function switchView(target) {
+        const toGallery = target === 'gallery';
+        tabUpload.classList.toggle('active', !toGallery);
+        tabGallery.classList.toggle('active', toGallery);
+        tabUpload.setAttribute('aria-selected', String(!toGallery));
+        tabGallery.setAttribute('aria-selected', String(toGallery));
+        paneUpload.hidden = toGallery;
+        paneGallery.hidden = !toGallery;
+        if (toGallery) {
+          loadGallery();
+          // "neue Fotos"-Punkt zurücksetzen — was jetzt da ist, wurde gesehen
+          try { localStorage.setItem(LAST_SEEN_KEY, String(galleryImages.length)); } catch (e) {}
+          tabGallery.classList.remove('has-new');
+        } else {
+          // Auswahl-Modus verlassen beim Wechseln
+          exitSelectMode();
+        }
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+
+      tabUpload.addEventListener('click', () => switchView('upload'));
+      tabGallery.addEventListener('click', () => switchView('gallery'));
+
+      async function loadGallery() {
+        galleryLoading.hidden = false;
+        galleryEmpty.hidden = true;
+        try {
+          const res = await fetch('/api/images', { cache: 'no-store' });
+          if (!res.ok) throw new Error('Status ' + res.status);
+          const data = await res.json();
+          galleryImages = data.images || [];
+          galleryCount.textContent = galleryImages.length;
+          galleryLabel.textContent = galleryImages.length === 1
+            ? 'Foto · neu zuerst'
+            : 'Fotos · neueste zuerst';
+
+          if (galleryImages.length === 0) {
+            galleryGrid.innerHTML = '';
+            galleryLoading.hidden = true;
+            galleryEmpty.hidden = false;
+            selectToggle.style.visibility = 'hidden';
+            return;
+          }
+
+          selectToggle.style.visibility = 'visible';
+          renderGrid();
+          galleryLoading.hidden = true;
+        } catch (err) {
+          galleryLoading.textContent = 'Konnte Fotos nicht laden. Bitte später erneut versuchen.';
+        }
+      }
+
+      function renderGrid() {
+        galleryGrid.innerHTML = galleryImages.map((img, i) => {
+          const name = img.name ? `<div class="name">${escapeHtml(img.name)}</div>` : '';
+          const dl = img.downloadUrl || img.url;
+          const selected = selectedIds.has(img.id) ? ' selected' : '';
+          return `
+            <div class="thumb${selected}" data-index="${i}" data-id="${escapeHtml(img.id)}">
+              <img src="${escapeHtml(img.thumbUrl || img.url)}" alt="${escapeHtml(img.name || '')}" loading="lazy" />
+              <a class="dl" href="${escapeHtml(dl)}" download aria-label="Herunterladen">↓</a>
+              <div class="pick" aria-hidden="true">${selectedIds.has(img.id) ? '✓' : '+'}</div>
+              ${name}
+            </div>`;
+        }).join('');
+        galleryGrid.classList.toggle('select-mode', selectMode);
+        wireThumbs();
+      }
+
+      function wireThumbs() {
+        galleryGrid.querySelectorAll('.thumb').forEach((tile) => {
+          const idx = Number(tile.getAttribute('data-index'));
+          const id = tile.getAttribute('data-id');
+          // Download-Pfeil: nichts sonst
+          const dl = tile.querySelector('.dl');
+          dl.addEventListener('click', (e) => e.stopPropagation());
+          // Tap auf die Kachel: Lightbox öffnen oder Auswahl toggeln
+          tile.addEventListener('click', () => {
+            if (selectMode) {
+              toggleSelect(id, tile);
+            } else {
+              openLightbox(idx);
+            }
+          });
+        });
+      }
+
+      function toggleSelect(id, tile) {
+        if (selectedIds.has(id)) {
+          selectedIds.delete(id);
+          tile.classList.remove('selected');
+          tile.querySelector('.pick').textContent = '+';
+        } else {
+          selectedIds.add(id);
+          tile.classList.add('selected');
+          tile.querySelector('.pick').textContent = '✓';
+        }
+        updateActionBar();
+      }
+
+      function updateActionBar() {
+        abCount.textContent = String(selectedIds.size);
+        if (selectMode && selectedIds.size > 0) {
+          actionBar.classList.add('show');
+          actionBar.setAttribute('aria-hidden', 'false');
+        } else {
+          actionBar.classList.remove('show');
+          actionBar.setAttribute('aria-hidden', 'true');
+        }
+      }
+
+      function enterSelectMode() {
+        selectMode = true;
+        selectToggle.textContent = 'Abbrechen';
+        selectToggle.classList.add('cancel');
+        galleryGrid.classList.add('select-mode');
+        updateActionBar();
+      }
+
+      function exitSelectMode() {
+        selectMode = false;
+        selectedIds.clear();
+        selectToggle.textContent = 'Auswählen';
+        selectToggle.classList.remove('cancel');
+        galleryGrid.classList.remove('select-mode');
+        galleryGrid.querySelectorAll('.thumb.selected').forEach((t) => {
+          t.classList.remove('selected');
+          const p = t.querySelector('.pick');
+          if (p) p.textContent = '+';
+        });
+        updateActionBar();
+      }
+
+      selectToggle.addEventListener('click', () => {
+        if (selectMode) exitSelectMode(); else enterSelectMode();
+      });
+
+      // --- Lightbox ---
+      let currentLbIndex = -1;
+
+      function openLightbox(index) {
+        const img = galleryImages[index];
+        if (!img) return;
+        currentLbIndex = index;
+        lbImg.src = img.url;
+        lbImg.alt = img.name || '';
+        lbDl.href = img.downloadUrl || img.url;
+        lbCaption.textContent = img.name ? 'von ' + img.name : '';
+        lightbox.classList.add('show');
+        lightbox.setAttribute('aria-hidden', 'false');
+      }
+
+      function closeLightbox() {
+        lightbox.classList.remove('show');
+        lightbox.setAttribute('aria-hidden', 'true');
+        lbImg.src = '';
+        currentLbIndex = -1;
+      }
+
+      lbClose.addEventListener('click', closeLightbox);
+      lightbox.addEventListener('click', (e) => {
+        // Klick auf den dunklen Hintergrund schließt — nicht auf Bild/Buttons
+        if (e.target === lightbox) closeLightbox();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && lightbox.classList.contains('show')) closeLightbox();
+      });
+
+      // --- ZIP-Download für ausgewählte Fotos ---
+      downloadZipBtn.addEventListener('click', async () => {
+        if (selectedIds.size === 0) return;
+        const original = downloadZipBtn.innerHTML;
+        downloadZipBtn.disabled = true;
+        downloadZipBtn.textContent = 'ZIP wird erstellt…';
+        try {
+          const res = await fetch('/api/download', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ publicIds: Array.from(selectedIds) }),
+          });
+          if (!res.ok) {
+            const d = await res.json().catch(() => ({}));
+            throw new Error(d.error || 'Status ' + res.status);
+          }
+          const d = await res.json();
+          const a = document.createElement('a');
+          a.href = d.url;
+          a.download = 'hochzeit-fotos-' + new Date().toISOString().slice(0, 10) + '.zip';
+          a.rel = 'noopener';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          exitSelectMode();
+        } catch (err) {
+          alert('ZIP konnte nicht erstellt werden: ' + err.message);
+        } finally {
+          downloadZipBtn.disabled = false;
+          downloadZipBtn.innerHTML = original;
+        }
+      });
+
+      // --- "Neue Fotos"-Punkt am Tab: prüft im Hintergrund, ob was Neues da ist ---
+      async function checkForNew() {
+        try {
+          const res = await fetch('/api/images', { cache: 'no-store' });
+          if (!res.ok) return;
+          const data = await res.json();
+          const count = (data.images || []).length;
+          const lastSeen = parseInt(localStorage.getItem(LAST_SEEN_KEY) || '0', 10);
+          // Nur wenn Galerie NICHT gerade offen ist, den Punkt setzen
+          if (paneGallery.hidden && count > lastSeen) {
+            tabGallery.classList.add('has-new');
+          }
+          // Wenn Galerie gerade offen ist und neue dazukamen: leise neu laden
+          if (!paneGallery.hidden && count !== galleryImages.length && !selectMode) {
+            loadGallery();
+          }
+        } catch (e) {}
+      }
+      checkForNew();
+      // alle 20 Sek prüfen — schont Rate-Limit
+      setInterval(checkForNew, 20000);
     </script>
   </body>
 </html>

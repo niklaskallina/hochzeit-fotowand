@@ -38,12 +38,16 @@ module.exports = async (req, res) => {
       return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const adminPw = process.env.ADMIN_PASSWORD;
-    if (adminPw && req.headers['x-admin-password'] !== adminPw) {
-      return res.status(401).json({ error: 'Falsches Admin-Passwort' });
-    }
-
+    // Diese Route ist bewusst öffentlich — Gäste sollen sich Fotos herunterladen können.
+    // "all" ist Admin-only (könnte sonst missbraucht werden, um alle Fotos in einem
+    // riesigen ZIP zu ziehen); explizite publicIds sind für alle offen.
     let { publicIds } = req.body || {};
+    if (publicIds === 'all') {
+      const adminPw = process.env.ADMIN_PASSWORD;
+      if (adminPw && req.headers['x-admin-password'] !== adminPw) {
+        return res.status(401).json({ error: 'Für "alle Fotos" bitte im Admin-Bereich anmelden' });
+      }
+    }
 
     if (publicIds === 'all') {
       publicIds = await collectAllPublicIds();
